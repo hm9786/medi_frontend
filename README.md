@@ -104,26 +104,21 @@ app.use(cors({
 
 ### 테스트 방법
 
-#### Mock API로 테스트 (백엔드 없이)
+#### 백엔드 서버 연동 (실제 API 사용)
 ```bash
-# .env.local에 추가
-NEXT_PUBLIC_USE_MOCK_API=true
+# 1. .env.local 파일 생성 (필수)
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+NEXT_PUBLIC_USE_MOCK_API=false
 
-# 테스트 계정
-이메일: test@example.com
-비밀번호: password123
-인증번호: 123456
-```
-
-#### 백엔드 연동 테스트
-```bash
-# 1. 백엔드 서버 실행 (포트 8000)
-# 2. 프론트엔드 실행
+# 2. 백엔드 서버 실행 (포트 8080)
+# 3. 프론트엔드 실행
 npm run dev
 
-# 3. 브라우저에서 테스트
+# 4. 브라우저에서 테스트
 http://localhost:3000
 ```
+
+**⚠️ 주의: 백엔드 서버(8080 포트)가 실행되어야 정상 작동합니다.**
 
 ## 📦 빌드 및 배포
 

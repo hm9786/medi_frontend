@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { authAPI } from "@/lib/api";
 
 
 // 10. ‼️ [수정됨] 에러/성공 메시지 표시 헬퍼 컴포넌트
@@ -81,55 +82,77 @@ formData.confirmPassword.length > 0 && formData.password === formData.confirmPas
   : "";
 
 
-  // 6. [기능 명세서] 이메일 형식 검사
-  const validateEmail = () => {
+  // 6. [기능 명세서] 이메일 형식 검사 및 중복 검사
+  const validateEmail = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setErrors((prev) => ({ ...prev, email: "올바른 이메일 형식이 아닙니다." }));
       return false;
     }
-    // [미래] 여기에서 백엔드 API로 이메일 중복 검사
-    // if (isEmailDuplicate) {
-    //   setErrors((prev) => ({ ...prev, email: "이미 사용 중인 이메일입니다." }));
-    //   return false;
-    // }
 
-    setErrors((prev) => ({ ...prev, email: "" }));
-    setSuccess((prev) => ({ ...prev, email: "사용 가능한 이메일입니다." }));
-    return true;
+    try {
+      // 백엔드 API로 이메일 중복 검사
+      const response = await authAPI.checkEmailDuplicate(formData.email);
+      
+      if (!response.data.available) {
+        setErrors((prev) => ({ ...prev, email: "이미 사용 중인 이메일입니다." }));
+        return false;
+      }
+
+      setErrors((prev) => ({ ...prev, email: "" }));
+      setSuccess((prev) => ({ ...prev, email: "사용 가능한 이메일입니다." }));
+      return true;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "이메일 확인 중 오류가 발생했습니다.";
+      setErrors((prev) => ({ ...prev, email: errorMessage }));
+      return false;
+    }
   };
 
   // 7. [기능 명세서] 인증번호 받기
-  const handleRequestAuthCode = () => {
-    if (validateEmail()) {
-      // [미래] 백엔드로 인증번호 발송 API 호출
-      console.log("인증번호 발송:", formData.email);
-      setSuccess((prev) => ({
-        ...prev,
-        email: "인증번호가 발송되었습니다. 6분 내에 입력해주세요.",
-      }));
-      // ⬇️ "인증번호 확인" 입력창을 보여주도록 상태 변경
-      setIsAuthCodeSent(true);
+  const handleRequestAuthCode = async () => {
+    const isValid = await validateEmail();
+    if (isValid) {
+      try {
+        // 백엔드로 인증번호 발송 API 호출
+        const response = await authAPI.sendVerificationCode(formData.email);
+        
+        setSuccess((prev) => ({
+          ...prev,
+          email: "인증번호가 발송되었습니다. 6분 내에 입력해주세요.",
+        }));
+        setErrors((prev) => ({ ...prev, email: "" }));
+        // ⬇️ "인증번호 확인" 입력창을 보여주도록 상태 변경
+        setIsAuthCodeSent(true);
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "인증번호 발송에 실패했습니다.";
+        setErrors((prev) => ({ ...prev, email: errorMessage }));
+      }
     }
   };
 
   // 8. [기능 명세서] 인증번호 확인
-  const handleVerifyAuthCode = () => {
+  const handleVerifyAuthCode = async () => {
     if (formData.authCode.length !== 6) {
       setErrors((prev) => ({ ...prev, authCode: "인증번호 6자리를 입력해주세요." }));
       return;
     }
 
-    // [미래] 백엔드로 인증번호 확인 API 호출
-    console.log("인증번호 확인:", formData.authCode);
+    try {
+      // 백엔드로 인증번호 확인 API 호출
+      const response = await authAPI.verifyCode(formData.email, formData.authCode);
 
-    // (성공했다고 가정)
-    setSuccess((prev) => ({ ...prev, authCode: "인증이 완료되었습니다." }));
-    setErrors((prev) => ({ ...prev, authCode: "" }));
-    setIsEmailVerified(true);
+      // 성공 시
+      setSuccess((prev) => ({ ...prev, authCode: "인증이 완료되었습니다." }));
+      setErrors((prev) => ({ ...prev, authCode: "" }));
+      setIsEmailVerified(true);
 
-    // 인증이 완료되면 이메일 입력창도 비활성화
-    setSuccess((prev) => ({ ...prev, email: "이메일 인증이 완료되었습니다." }));
+      // 인증이 완료되면 이메일 입력창도 비활성화
+      setSuccess((prev) => ({ ...prev, email: "이메일 인증이 완료되었습니다." }));
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "인증번호가 올바르지 않습니다.";
+      setErrors((prev) => ({ ...prev, authCode: errorMessage }));
+    }
   };
 
   // 9. [기능 명세서] 최종 회원가입 버튼 클릭
@@ -154,12 +177,23 @@ formData.confirmPassword.length > 0 && formData.password === formData.confirmPas
     }
     // (전화번호 유효성 검사 등...)
 
-    // [미래] 모든 폼 데이터를 백엔드로 전송
-    console.log("회원가입 시도:", formData);
+    try {
+      // 실제 백엔드로 회원가입 요청
+      const response = await authAPI.signup({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone,
+      });
 
-    // 성공 시
-    alert("회원가입이 완료되었습니다!");
-    router.push("/login"); // 로그인 페이지로 이동
+      // 성공 시
+      alert("회원가입이 완료되었습니다!");
+      router.push("/login"); // 로그인 페이지로 이동
+    } catch (error: any) {
+      // 에러 처리
+      const errorMessage = error.response?.data?.message || "회원가입에 실패했습니다.";
+      setErrors((prev) => ({ ...prev, submit: errorMessage }));
+    }
   };
 
   // 10. 에러/성공 메시지 표시 헬퍼 컴포넌트
