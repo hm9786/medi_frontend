@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { loginUser, clearError } from "@/store/authSlice";
 
 
 // 2. 구글 로고 아이콘 (SVG 컴포넌트)
@@ -45,32 +47,29 @@ export default function LoginPage() {
   // 폼 데이터를 '기억'하기 위한 State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   
   const router = useRouter(); // 페이지 이동을 위한 훅
+  const dispatch = useAppDispatch();
+  const { isLoading, error } = useAppSelector((state) => state.auth);
 
   // 로그인 버튼 클릭 시 실행될 함수
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); // 폼 제출 시 새로고침 방지
-    setError(""); // 에러 메시지 초기화
+    dispatch(clearError()); // 에러 메시지 초기화
     
     // 1. 간단한 유효성 검사
     if (!email || !password) {
-      setError("아이디와 비밀번호를 모두 입력해주세요.");
       return;
     }
 
-    // 2. 백엔드와 통신 (지금은 성공했다고 가정)
-    // [미래] 여기에 백엔드 API 호출 코드가 들어갑니다.
-    // const response = await fetch("/api/login", { ... });
-    // const data = await response.json();
+    // 2. Redux 액션 디스패치
+    const result = await dispatch(loginUser({ email, password }));
     
-    // 3. 로그인 성공 시 대시보드로 이동
-    // if (data.success) {
-       router.push("/dashboard"); // (대시보드 경로는 예시입니다)
-    // } else {
-    //   setError("아이디 또는 비밀번호가 일치하지 않습니다.");
-    // }
+    if (loginUser.fulfilled.match(result)) {
+      // 3. 로그인 성공 시 대시보드로 이동
+      router.push("/dashboard");
+    }
+    // 에러는 Redux state에서 자동으로 관리됨
   };
 
   return (
@@ -140,8 +139,14 @@ export default function LoginPage() {
             )}
 
             {/* 로그인 버튼 */}
-            <Button type="submit" size="lg" className="h-14 w-full rounded-2xl text-base mt-4">
-              로그인
+
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="h-14 w-full rounded-2xl text-base mt-4"
+              disabled={isLoading}
+            >
+              {isLoading ? "로그인 중..." : "로그인"}
             </Button>
           </form>
 

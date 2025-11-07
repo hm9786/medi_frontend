@@ -17,7 +17,7 @@ export default function MainPage() {
             SNS 댓글관리 솔루션 메디를 만나보세요
           </p>
           
-          <Link href="/hello">
+          <Link href="/helloㅎㅎ">
             <Button size="lg" className="text-lg px-8 py-6">
               무료로 시작하기
             </Button>

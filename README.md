@@ -70,21 +70,60 @@ npm run dev
 
 ## 🔧 백엔드 연동
 
+### 인증 방식
+- **세션 기반 인증** (JWT 사용 안함)
+- 쿠키를 통한 세션 관리
+- `withCredentials: true`로 쿠키 자동 전송
+
 ### API 엔드포인트
 ```
-POST /api/auth/check-email        # 이메일 중복 검사
-POST /api/auth/send-verification  # 인증번호 발송
-POST /api/auth/verify-code        # 인증번호 확인
-POST /api/auth/signup             # 회원가입
-POST /api/auth/login              # 로그인
+POST /api/auth/check-email           # 이메일 중복 검사
+POST /api/auth/send-verification     # 인증번호 발송
+POST /api/auth/verify-code           # 인증번호 확인
+POST /api/auth/signup                # 회원가입
+POST /api/auth/login                 # 로그인
+GET  /api/auth/profile               # 사용자 정보 조회
+POST /api/auth/logout                # 로그아웃
+GET  /api/auth/check-session         # 세션 확인 (선택사항)
 POST /api/auth/password-reset-request # 비밀번호 재설정 요청
-POST /api/auth/password-reset     # 비밀번호 재설정
+POST /api/auth/password-reset        # 비밀번호 재설정
 ```
 
-### CORS 설정 필요
-백엔드에서 다음 도메인 허용 필요:
-- 개발: `http://localhost:3000`
-- 배포: 실제 도메인
+### CORS 설정 필수
+```javascript
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true, // 쿠키 허용 필수
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}));
+```
+
+### 상세 API 명세서
+📋 [API 명세서 보기](./docs/API_SPECIFICATION.md)
+
+### 테스트 방법
+
+#### Mock API로 테스트 (백엔드 없이)
+```bash
+# .env.local에 추가
+NEXT_PUBLIC_USE_MOCK_API=true
+
+# 테스트 계정
+이메일: test@example.com
+비밀번호: password123
+인증번호: 123456
+```
+
+#### 백엔드 연동 테스트
+```bash
+# 1. 백엔드 서버 실행 (포트 8000)
+# 2. 프론트엔드 실행
+npm run dev
+
+# 3. 브라우저에서 테스트
+http://localhost:3000
+```
 
 ## 📦 빌드 및 배포
 
