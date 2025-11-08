@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { authAPI } from "@/lib/api";
 
 
 // 2. '비밀번호 찾기' 페이지 본문
@@ -25,7 +26,7 @@ export default function ForgotPasswordPage() {
   const router = useRouter(); // 페이지 이동을 위한 훅
 
   // "인증번호 받기" 버튼 클릭 시
-  const handleRequestCode = () => {
+  const handleRequestCode = async () => {
     setError("");
     
     if (!email) {
@@ -33,12 +34,17 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // [미래] 여기에 백엔드로 "email"을 보내 인증번호를 요청하는 API 호출
-    console.log("인증번호 요청:", email);
-
-    // 성공 시, 메시지를 보여주고 "인증번호 확인" 입력창을 엽니다.
-    setMessage("인증번호가 전송되었습니다. 이메일을 확인해주세요.");
-    setShowAuthCodeInput(true); // ⬅️ "인증번호 확인" 입력창을 보여줍니다!
+    try {
+      // 백엔드로 비밀번호 재설정 인증번호 요청 API 호출
+      const response = await authAPI.requestPasswordReset(email);
+      
+      // 성공 시, 메시지를 보여주고 "인증번호 확인" 입력창을 엽니다.
+      setMessage("인증번호가 전송되었습니다. 이메일을 확인해주세요.");
+      setShowAuthCodeInput(true); // ⬅️ "인증번호 확인" 입력창을 보여줍니다!
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "인증번호 요청에 실패했습니다.";
+      setError(errorMessage);
+    }
   };
 
   // "비밀번호 변경" (폼 전체 제출) 버튼 클릭 시
@@ -63,13 +69,17 @@ export default function ForgotPasswordPage() {
       return;
     }
     
-    // [미래] 여기에 백엔드로 email, authCode, newPassword를 보내
-    // 비밀번호를 변경하는 API 호출
-    console.log("비밀번호 변경 시도:", email, authCode, newPassword);
+    try {
+      // 백엔드로 비밀번호 재설정 API 호출
+      const response = await authAPI.resetPassword(email, authCode, newPassword);
 
-    // 성공 시 로그인 페이지로 이동
-    alert("비밀번호가 성공적으로 변경되었습니다.");
-    router.push("/login");
+      // 성공 시 로그인 페이지로 이동
+      alert("비밀번호가 성공적으로 변경되었습니다.");
+      router.push("/login");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "비밀번호 변경에 실패했습니다.";
+      setError(errorMessage);
+    }
   };
 
   return (

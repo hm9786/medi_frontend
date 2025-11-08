@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// API 기본 설정
+// API 기본 설정 (백엔드 직접 연동)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // axios 인스턴스 생성 (세션 기반)
