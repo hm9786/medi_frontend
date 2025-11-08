@@ -44,7 +44,7 @@ npm install
 cp env.example .env.local
 
 # 백엔드 API 주소 설정
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ```
 
 ### 3. 개발 서버 실행
@@ -87,9 +87,16 @@ POST /api/auth/logout                # 로그아웃
 GET  /api/auth/check-session         # 세션 확인 (선택사항)
 POST /api/auth/password-reset-request # 비밀번호 재설정 요청
 POST /api/auth/password-reset        # 비밀번호 재설정
+GET  /api/auth/me                 # 현재 로그인한 사용자 정보
 ```
 
-### CORS 설정 필수
+인증 관련 API는 `{ authenticated, user }` 형태의 JSON 응답을 반환하도록 맞춰져 있습니다.
+
+### CORS 설정 필요
+백엔드에서 다음 도메인을 허용하고 쿠키 전송을 활성화해야 합니다:
+- 개발: `http://localhost:3000`
+- 배포: 실제 도메인
+
 ```javascript
 app.use(cors({
   origin: 'http://localhost:3000',

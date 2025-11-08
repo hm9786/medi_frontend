@@ -65,11 +65,12 @@ export default function LoginPage() {
     // 2. Redux 액션 디스패치
     const result = await dispatch(loginUser({ email, password }));
     
-    if (loginUser.fulfilled.match(result)) {
-      // 3. 로그인 성공 시 대시보드로 이동
-      router.push("/dashboard");
-    }
-    // 에러는 Redux state에서 자동으로 관리됨
+    // 3. 로그인 성공 시 대시보드로 이동
+    // if (data.authenticated) {
+       router.push("/dashboard"); // (대시보드 경로는 예시입니다)
+    // } else {
+    //   setError("아이디 또는 비밀번호가 일치하지 않습니다.");
+    // }
   };
 
   return (
