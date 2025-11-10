@@ -209,9 +209,42 @@ export default function LoginPage() {
           </div>
           
           {/* 구글 로그인 버튼 */}
-          <Button size="lg" variant="outline" className="h-14 w-full rounded-2xl text-base border-neutral-300">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="h-14 w-full rounded-2xl text-base border-neutral-300"
+            onClick={async () => {
+              try {
+                dispatch(loginStart()); // Redux 로딩 상태 시작
+                // 구글 OAuth 로그인 URL 조회
+                const response = await fetch("http://localhost:8080/api/auth/oauth2/google/url", {
+                  method: "GET",
+                  credentials: "include",
+                });
+
+                if (!response.ok) {
+                  dispatch(loginFailure("구글 로그인 URL을 가져오는데 실패했습니다."));
+                  return;
+                }
+
+                const data = await response.json();
+                
+                // 백엔드에서 받은 URL로 리다이렉트
+                // URL이 상대 경로인 경우 백엔드 base URL과 결합
+                const redirectUrl = data.url.startsWith("http") 
+                  ? data.url 
+                  : `http://localhost:8080${data.url}`;
+                
+                window.location.href = redirectUrl;
+              } catch (error) {
+                console.error("구글 로그인 오류:", error);
+                dispatch(loginFailure("서버 연결에 실패했습니다."));
+              }
+            }}
+            disabled={isLoading}
+          >
             <GoogleIcon className="mr-2 h-6 w-6" />
-            구글 계정으로 계속하기
+            {isLoading ? "연결 중..." : "구글 계정으로 계속하기"}
           </Button>
 
         </div>

@@ -14,8 +14,15 @@ export default function Navigation() {
   // 로그아웃 핸들러
   const handleLogout = async () => {
     try {
-      // 백엔드 로그아웃 API 호출
-      const response = await fetch("http://localhost:8080/api/auth/logout", {
+      // 구글 OAuth 로그인인지 확인
+      const isGoogleUser = user?.provider === "GOOGLE";
+      
+      // 적절한 로그아웃 API 호출
+      const logoutUrl = isGoogleUser 
+        ? "http://localhost:8080/api/auth/oauth2/logout"
+        : "http://localhost:8080/api/auth/logout";
+      
+      const response = await fetch(logoutUrl, {
         method: "POST",
         credentials: "include",
       });
