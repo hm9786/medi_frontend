@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/components/StoreProvider";
-import AuthInitializer from "@/components/AuthInitializer";
+import AuthInitializer from "@/components/AuthInitializer"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,14 +21,23 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <StoreProvider>
-          <AuthInitializer />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ClientWrapper>
           {children}
-        </StoreProvider>
+        </ClientWrapper>
       </body>
     </html>
+  );
+}
+
+// 클라이언트 전용 래퍼
+function ClientWrapper({ children }) {
+  "use client";
+
+  return (
+    <StoreProvider>
+      <AuthInitializer /> {/* import 한 AuthInitializer만 사용 */}
+      {children}
+    </StoreProvider>
   );
 }

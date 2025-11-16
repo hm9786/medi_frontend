@@ -36,17 +36,17 @@ export default function Navigation() {
     } finally {
       // Redux 상태 초기화 (서버 응답과 관계없이 항상 실행)
       dispatch(logout());
-      router.push("/login");
+      router.push("/");
     }
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-sm z-50">
-      <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
+    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-sm z-50 h-16">
+      <nav className="container mx-auto px-6 h-full flex justify-between items-center">
         {/* 로고 (Comic Neue 폰트 적용) */}
         <Link
           href="/"
-          className="text-black text-4xl font-bold font-['Comic_Neue'] leading-[54px]"
+          className="text-black text-4xl font-bold font-['Comic_Neue'] leading-none flex items-center"
         >
           Medi
         </Link>

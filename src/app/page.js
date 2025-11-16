@@ -1,9 +1,29 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import Navigation from "@/components/Navigation"; // 1. 방금 만든 Navigation 컴포넌트
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 // 메인 페이지
 export default function MainPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
+  // 로그인 상태면 대시보드로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  // 로그인 상태면 아무것도 렌더링하지 않음 (리다이렉트 중)
+  if (isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* 1. 네비게이션 */}
