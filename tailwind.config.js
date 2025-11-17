@@ -19,6 +19,11 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans], // Inter
+        comic: ["var(--font-comic-neue)"], // Comic Neue
+        roboto: ["var(--font-roboto)"], // Roboto
+      },
       colors: {
         border: "var(--border)",
         input: "var(--input)",
