@@ -46,28 +46,6 @@ export default function Navigation() {
           Medi
         </Link>
 
-        {/* 메뉴 항목 */}
-        <div className="absolute left-[808px] top-[24px] w-80 inline-flex justify-end items-center gap-12">
-          <Link 
-            href="#" 
-            className="flex justify-center items-center text-black text-xl font-medium font-['Inter'] leading-8 hover:text-red-600 transition-colors"
-          >
-            제품소개
-          </Link>
-          <Link 
-            href="#" 
-            className="flex justify-center items-center text-black text-xl font-medium font-['Inter'] leading-8 hover:text-red-600 transition-colors"
-          >
-            회사소개
-          </Link>
-          <Link 
-            href="#" 
-            className="flex justify-center items-center text-black text-xl font-medium font-['Inter'] leading-8 hover:text-red-600 transition-colors"
-          >
-            요금제
-          </Link>
-        </div>
-
         {/* 로그인 상태에 따른 버튼 표시 */}
         {isAuthenticated ? (
           <div className="absolute right-[148px] top-[11px] flex items-center gap-3">
