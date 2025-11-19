@@ -1,0 +1,100 @@
+const defaultTheme = require("tailwindcss/defaultTheme")
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  // 1. content 경로를 JavaScript 프로젝트에 맞게 수정
+  content: [
+    './pages/**/*.{js,jsx}',
+    './components/**/*.{js,jsx}',
+    './app/**/*.{js,jsx}',
+    './src/**/*.{js,jsx}',
+	],
+  darkMode: "class",
+  theme: {
+    container: {
+      center: true,
+      padding: "1.5rem", // 사용자 설정을 유지합니다
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans], // Inter
+        comic: ["var(--font-comic-neue)"], // Comic Neue
+        roboto: ["var(--font-roboto)"], // Roboto
+      },
+      colors: {
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        primary: "var(--primary)",
+        "primary-foreground": "var(--primary-foreground)",
+        secondary: "var(--secondary)",
+        "secondary-foreground": "var(--secondary-foreground)",
+        destructive: "var(--destructive)",
+        accent: "var(--accent)",
+        "accent-foreground": "var(--accent-foreground)",
+        muted: "var(--muted)",
+        "muted-foreground": "var(--muted-foreground)",
+        popover: "var(--popover)",
+        "popover-foreground": "var(--popover-foreground)",
+        card: "var(--card)",
+        "card-foreground": "var(--card-foreground)",
+        sidebar: "var(--sidebar)",
+        "sidebar-foreground": "var(--sidebar-foreground)",
+        "sidebar-primary": "var(--sidebar-primary)",
+        "sidebar-primary-foreground": "var(--sidebar-primary-foreground)",
+        "sidebar-accent": "var(--sidebar-accent)",
+        "sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
+        "sidebar-border": "var(--sidebar-border)",
+        "sidebar-ring": "var(--sidebar-ring)",
+
+        // ⬇️ [추가됨] Medi 커스텀 색상
+        "medi-primary": {
+          light: "hsl(var(--medi-primary-light))",
+          lighter: "hsl(var(--medi-primary-lighter))",
+          DEFAULT: "hsl(var(--primary))",
+          dark: "hsl(var(--medi-primary-dark))",
+        }
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+      },
+      boxShadow: { // 사용자 설정을 유지합니다
+        xs: "0 1px 2px 0 rgba(15, 23, 42, 0.08)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+        mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],
+        
+        // ⬇️ [추가됨] 커스텀 폰트 (globals.css에 @import 필요)
+        comic: ["var(--font-comic-neue)"],
+        roboto: ["var(--font-roboto)"],
+      },
+      // ⬇️ [추가됨] shadcn/ui 애니메이션
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  // ⬇️ [수정됨] shadcn/ui 애니메이션 플러그인 (필수)
+  plugins: [require("tailwindcss-animate")], 
+}
+

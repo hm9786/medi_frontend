@@ -1,6 +1,6 @@
 "use client"; // useState를 사용해야 하므로 Client Component가 되어야 합니다.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,19 @@ export default function LoginPage() {
   const router = useRouter();
   
   // Redux에서 로딩 상태와 에러 가져오기
-  const { isLoading, error } = useSelector((state) => state.auth);
+  const { isLoading, error, isAuthenticated } = useSelector((state) => state.auth);
+
+  // 이미 로그인되어 있으면 대시보드로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  // 로그인 상태면 아무것도 렌더링하지 않음 (리다이렉트 중)
+  if (isAuthenticated) {
+    return null;
+  }
 
   // 로그인 버튼 클릭 시 실행될 함수
   const handleLogin = async (e) => {

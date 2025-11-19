@@ -292,4 +292,3 @@ frontend/
 - Tailwind 클래스가 올바른지 확인
 - `globals.css`가 import되어 있는지 확인
 - 브라우저 캐시 삭제
-
