@@ -81,16 +81,16 @@ export default function SignupStep0Page() {
       <Navigation />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
-      <main className="min-h-screen flex flex-col justify-center items-center pt-20">
+      <main className="min-h-screen flex flex-col justify-start items-center pt-32">
         <div className="flex flex-col items-center gap-10 w-full max-w-md px-4">
           
           {/* 3-1. 메디 시작하기 (Roboto 폰트 적용) */}
-          <h1 className="text-6xl font-medium font-['Roboto'] leading-[64px] text-black">
+          <h1 className="text-6xl font-medium font-['Roboto'] leading-[100px] text-black">
             메디 시작하기
           </h1>
 
           {/* 3-2. 버튼 영역 */}
-          <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-8 w-full mt-12">
             
             {/* 이메일로 시작하기 (shadcn/ui Button) */}
             {/* 이 버튼을 누르면 step1 (약관 동의) 페이지로 이동합니다. */}
