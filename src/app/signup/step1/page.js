@@ -131,7 +131,7 @@ export default function SignupStep1Page() {
             {/* 이용약관 (필수) */}
             <div className="flex flex-col gap-2">
               <Label className="text-base font-medium">
-                <span className="font-bold text-blue-500 underline">필수</span>
+                <span className="font-bold text-black underline">필수</span>
                 {` 메디 이용약관`}
               </Label>
               {/* 스크롤 가능한 약관 내용 */}
@@ -156,7 +156,7 @@ export default function SignupStep1Page() {
             {/* 개인정보 처리방침 (필수) */}
             <div className="flex flex-col gap-2">
               <Label className="text-base font-medium">
-                <span className="font-bold text-blue-500 underline">필수</span>
+                <span className="font-bold text-black underline">필수</span>
                 {` 개인정보처리방침`}
               </Label>
               {/* 스크롤 가능한 약관 내용 */}

@@ -130,11 +130,11 @@ export default function LoginPage() {
       <Navigation />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
-      <main className="min-h-screen flex flex-col justify-center items-center pt-20">
+      <main className="min-h-screen flex flex-col justify-start items-center pt-16">
         <div className="flex flex-col items-center gap-8 w-full max-w-md px-4 py-8">
           
           {/* 3-1. 제목 (Roboto 폰트 적용) */}
-          <h1 className="text-6xl font-medium font-['Roboto'] text-black">
+          <h1 className="text-6xl font-medium font-['Roboto'] text-black mb-12">
             로그인
           </h1>
 
@@ -157,11 +157,6 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-14 rounded-2xl text-base"
               />
-              <div className="text-right">
-                <Link href="#" className="text-sm text-gray-600 hover:underline">
-                  아이디 찾기
-                </Link>
-              </div>
             </div>
 
             {/* 비밀번호 입력란 */}
@@ -198,7 +193,7 @@ export default function LoginPage() {
             <Button 
               type="submit" 
               size="lg" 
-              className="h-14 w-full rounded-2xl text-base mt-4"
+              className="h-14 w-full rounded-2xl text-lg mt-4 font-medium"
               disabled={isLoading}
             >
               {isLoading ? "로그인 중..." : "로그인"}
@@ -206,9 +201,9 @@ export default function LoginPage() {
           </form>
 
           {/* 회원가입 링크 */}
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-black-600">
             회원이 아니신가요?
-            <Link href="/signup/step0" className="font-bold text-blue-500 hover:underline ml-1">
+            <Link href="/signup/step0" className="font-bold text-gray-500 hover:underline ml-1">
               회원가입
             </Link>
           </div>
