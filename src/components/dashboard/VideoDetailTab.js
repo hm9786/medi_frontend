@@ -35,8 +35,8 @@ export function VideoDetailTab({ video, onBack }) {
           // 비디오 정보 업데이트 (video prop에 추가 정보 반영)
           // 주의: video prop은 읽기 전용이므로, 상세 분석 데이터만 별도로 관리
           
-          // 상세 분석 데이터는 추후 API가 추가되면 여기서 가져옵니다.
-          // 현재는 기본 비디오 정보만 사용하고, 분석 데이터는 임시로 빈 배열 설정
+          // 상세 분석 데이터는 추``````후 API가 추가되면 여기서 가져옵니다.
+          // 현재는 기본 비디오 정``````보만 사용하고, 분석 데이터는 임시로 빈 배열 설정
           setDetailData({
             videoInfo: videoData, // API에서 받은 비디오 정보
             commentTrendData: [], // 추후 댓글 추이 API가 추가되면 여기에 추가

@@ -84,7 +84,7 @@ export function BadCommentsTab({ data }) {
               <div className="size-20 rounded-full bg-amber-600 flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle className="size-10 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">⚠️ 주의: 원본 악플 내용 포함</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4"> 주의: 원본 악플 내용 포함</h2>
               {/* ... (이하 동일) ... */}
             </div>
             <div className="flex flex-col gap-3">

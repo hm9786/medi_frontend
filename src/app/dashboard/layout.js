@@ -22,9 +22,9 @@ import {
   ChevronRight,
   AlertCircle,
   BarChart3, //  탭 아이콘
-  Heart,     //  탭 아이콘
   Lightbulb, //  탭 아이콘
   Shield,    //  탭 아이콘
+  Scale,     //  탭 아이콘 (법률 상담)
   ExternalLink //  외부 링크 아이콘
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,10 @@ import { Separator } from "@/components/ui/separator"; // ‼️ [추가]
 
 // 1. 사이드바 컴포넌트
 // activeTab, setActiveTab props 추가
-function Sidebar({ isSidebarExpanded, currentView, activeTab, handleBackToChannels, setActiveTab }) {
+function Sidebar({ isSidebarExpanded, currentView, activeTab, handleBackToChannels, setActiveTab, selectedChannelHandle }) {
+  const youtubeChannelUrl = selectedChannelHandle
+    ? `https://www.youtube.com/${selectedChannelHandle.startsWith("@") ? selectedChannelHandle : `@${selectedChannelHandle}`}`
+    : "https://www.youtube.com";
   
   const isActive = (view) => currentView === view;
   const isTabActive = (tab) => activeTab === tab;
@@ -93,18 +96,6 @@ function Sidebar({ isSidebarExpanded, currentView, activeTab, handleBackToChanne
               </Button>
 
               <Button
-                variant={isTabActive('mental') ? "secondary" : "ghost"}
-                onClick={() => setActiveTab('mental')}
-                className={`flex items-center w-full py-2.5 h-12 rounded-lg
-                  ${isSidebarExpanded ? 'gap-3 justify-start px-3' : 'justify-center'}
-                `}
-                title={!isSidebarExpanded ? '멘탈 케어' : ''}
-              >
-                <Heart className="size-5 flex-shrink-0" />
-                {isSidebarExpanded && <span className="font-medium text-base leading-[1.5]">멘탈 케어</span>}
-              </Button>
-
-              <Button
                 variant={isTabActive('consulting') ? "secondary" : "ghost"}
                 onClick={() => setActiveTab('consulting')}
                 className={`flex items-center w-full py-2.5 h-12 rounded-lg
@@ -127,15 +118,26 @@ function Sidebar({ isSidebarExpanded, currentView, activeTab, handleBackToChanne
                 <Shield className="size-5 flex-shrink-0" />
                 {isSidebarExpanded && <span className="font-medium text-base leading-[1.5]">원본 악플보기</span>}
               </Button>
+
+              <Button
+                variant={isTabActive('legal') ? "secondary" : "ghost"}
+                onClick={() => setActiveTab('legal')}
+                className={`flex items-center w-full py-2.5 h-12 rounded-lg
+                  ${isSidebarExpanded ? 'gap-3 justify-start px-3' : 'justify-center'}
+                `}
+                title={!isSidebarExpanded ? '법률 상담' : ''}
+              >
+                <Scale className="size-5 flex-shrink-0" />
+                {isSidebarExpanded && <span className="font-medium text-base leading-[1.5]">법률 상담</span>}
+              </Button>
             </div>
-            <Separator className="mx-2 my-4" />
           </>
         )}
         
         {/* 외부 링크 그룹 (사이드바 하단에 고정) */}
         <div className="mt-auto space-y-1 pt-6 border-t">
            <a
-            href="https://www.youtube.com"
+            href={youtubeChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={`
@@ -182,22 +184,54 @@ function Header({ onToggleSidebar, user }) {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  const clearGoogleSession = () => {
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "https://accounts.google.com/Logout";
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 2000);
+    } catch (error) {
+      console.info("구글 세션 초기화 중 오류가 발생했지만 무시합니다.");
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const isGoogleUser = user?.provider === "GOOGLE";
-      const logoutUrl = isGoogleUser 
-        ? "http://localhost:8080/api/auth/oauth2/logout"
-        : "http://localhost:8080/api/auth/logout";
-      
-      await fetch(logoutUrl, {
+      const googleLogoutUrl = "http://localhost:8080/api/auth/oauth2/logout";
+      const defaultLogoutUrl = "http://localhost:8080/api/auth/logout";
+
+      if (isGoogleUser) {
+        try {
+          const oauthResponse = await fetch(googleLogoutUrl, {
+            method: "POST",
+            credentials: "include",
+          });
+          if (!oauthResponse.ok) {
+            console.warn(`구글 로그아웃 API 오류: ${oauthResponse.status}`);
+          }
+          clearGoogleSession();
+        } catch (error) {
+          console.info("구글 로그아웃 요청 중 오류가 발생했지만 무시합니다.");
+        }
+      }
+
+      const response = await fetch(defaultLogoutUrl, {
         method: "POST",
         credentials: "include",
       });
+      
+      if (!response.ok) {
+        console.warn(`로그아웃 API 오류: ${response.status}`);
+      }
     } catch (error) {
-      console.error("로그아웃 API 오류:", error);
+      console.info("로그아웃 중 오류가 발생했지만 무시합니다.");
     } finally {
       dispatch(logout());
-      router.push("/");
+      router.push("/login");
     }
   };
 
@@ -284,15 +318,18 @@ export default function DashboardLayout({ children }) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [currentView, setCurrentView] = useState('channels');
   const [selectedChannel, setSelectedChannel] = useState(null);
+  const [selectedChannelHandle, setSelectedChannelHandle] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
   const handleBackToChannels = () => {
     setCurrentView('channels');
     setSelectedChannel(null);
+    setSelectedChannelHandle(null);
   };
 
-  const handleChannelSelect = (channelId) => {
+  const handleChannelSelect = (channelId, channelHandle) => {
     setSelectedChannel(channelId);
+    setSelectedChannelHandle(channelHandle || null);
     setCurrentView('detail');
     setActiveTab('overview');
   };
@@ -303,6 +340,7 @@ export default function DashboardLayout({ children }) {
     selectedChannel,
     activeTab,
     handleChannelSelect,
+    selectedChannelHandle,
     setActiveTab, 
     handleBackToChannels //  handleBackToChannels도 Context에 포함
   };
@@ -327,6 +365,7 @@ export default function DashboardLayout({ children }) {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             handleBackToChannels={handleBackToChannels}
+            selectedChannelHandle={selectedChannelHandle}
           />
           
           <main className="flex-1 overflow-auto">

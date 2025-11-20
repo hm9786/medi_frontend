@@ -32,9 +32,9 @@ import { Badge } from "@/components/ui/badge";
 // 탭 컴포넌트들을 가져옵니다.
 // (이 파일들은 front/src/components/dashboard/ 폴더에 있어야 합니다)
 import { OverviewTab } from "@/components/dashboard/OverviewTab";
-import { MentalCareTab } from "@/components/dashboard/MentalCareTab";
 import { ContentConsultingTab } from "@/components/dashboard/ContentConsultingTab";
 import { BadCommentsTab } from "@/components/dashboard/BadCommentsTab";
+import { LegalConsultingTab } from "@/components/dashboard/LegalConsultingTab";
 
 // Context를 가져옵니다.
 import { DashboardContext } from "@/context/DashboardContext";
@@ -140,7 +140,10 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
               <Card
                 key={channel.id}
                 className="hover:shadow-lg transition-shadow relative cursor-pointer"
-                onClick={() => handleChannelSelect(channel.id)} // ‼️ Context의 함수 사용
+                onClick={() => handleChannelSelect(
+                  channel.id,
+                  channel.channelHandle || channel.youtubeChannelId || ""
+                )} // ‼️ Context의 함수 사용
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between mb-4">
@@ -230,9 +233,9 @@ function ChannelDetailView({ channelId, activeTab }) {
   
   // 탭별 데이터를 저장할 State
   const [overviewData, setOverviewData] = useState(null);
-  const [mentalCareData, setMentalCareData] = useState(null);
   const [consultingData, setConsultingData] = useState(null);
   const [badCommentsData, setBadCommentsData] = useState(null);
+  const [legalData, setLegalData] = useState(null);
   
   const [isLoading, setIsLoading] = useState(true); // 탭 컨텐츠 로딩
   const [isHeaderLoading, setIsHeaderLoading] = useState(true); // 채널 헤더 로딩
@@ -297,27 +300,27 @@ function ChannelDetailView({ channelId, activeTab }) {
             console.error("비디오 목록 로드 실패:", videosResponse.status);
             setOverviewData({ videos: [], categories: [], monthlyData: [] });
           }
-        } else if (activeTab === 'mental') {
-          // 멘탈 케어 탭: 추후 API가 추가되면 여기에 구현
-          setMentalCareData({});
         } else if (activeTab === 'consulting') {
           // 콘텐츠 컨설팅 탭: 추후 API가 추가되면 여기에 구현
           setConsultingData({});
         } else if (activeTab === 'badcomments') {
           // 원본 악플보기 탭: 추후 API가 추가되면 여기에 구현
           setBadCommentsData({});
+        } else if (activeTab === 'legal') {
+          // 법률 상담 탭: 챗봇은 클라이언트 측에서 처리
+          setLegalData({});
         }
       } catch (err) {
         console.error("탭 데이터 로드 실패:", err);
         // 에러 발생 시 빈 데이터 설정
         if (activeTab === 'overview') {
           setOverviewData({ videos: [], categories: [], monthlyData: [] });
-        } else if (activeTab === 'mental') {
-          setMentalCareData({});
         } else if (activeTab === 'consulting') {
           setConsultingData({});
         } else if (activeTab === 'badcomments') {
           setBadCommentsData({});
+        } else if (activeTab === 'legal') {
+          setLegalData({});
         }
       } finally {
         setIsLoading(false);
@@ -358,12 +361,12 @@ function ChannelDetailView({ channelId, activeTab }) {
     switch (activeTab) {
       case 'overview':
         return <OverviewTab data={overviewData} />;
-      case 'mental':
-        return <MentalCareTab data={mentalCareData} />;
       case 'consulting':
         return <ContentConsultingTab data={consultingData} />;
       case 'badcomments':
         return <BadCommentsTab data={badCommentsData} />;
+      case 'legal':
+        return <LegalConsultingTab data={legalData} />;
       default:
         return <OverviewTab data={overviewData} />;
     }
@@ -402,27 +405,14 @@ function ChannelDetailView({ channelId, activeTab }) {
                 className="size-20 rounded-full object-cover ring-4 ring-white shadow-sm"
               />
               <div className="flex-1">
-                <h1 className="text-2xl font-medium text-gray-900 mb-2 leading-[1.5]">{channel.channelName}</h1>
+                <h1 className="text-3xl font-medium font-['Inter'] text-gray-900 mb-2 leading-[1.5]">{channel.channelName}</h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-600 mb-3 leading-[1.5]">
                   <span>{channel.channelHandle}</span>
                   <span>•</span>
-                  <span>{channel.subscriberCount?.toLocaleString() || 0} 구독자</span>
-                  <span>•</span>
-                  <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">
-                    <Youtube className="size-3 mr-1" />
-                    YouTube
-                  </Badge>
+                  <span>{(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()} 구독자</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm">채널 설정</Button>
-                {getChannelStatus(channel.lastSyncedAt) === 'warning' && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">
-                    <Clock className="size-3 mr-1" />
-                    재연동 필요 ({getAuthExpiry(channel.lastSyncedAt)})
-                  </Badge>
-                )}
-              </div>
+
             </div>
           </CardContent>
         </Card>

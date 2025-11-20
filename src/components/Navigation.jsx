@@ -11,15 +11,42 @@ export default function Navigation() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   // 로그아웃 핸들러
+  const clearGoogleSession = () => {
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "https://accounts.google.com/Logout";
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 2000);
+    } catch (error) {
+      console.info("구글 세션 초기화 중 오류가 발생했지만 무시합니다.");
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const isGoogleUser = user?.provider === "GOOGLE";
+      const googleLogoutUrl = "http://localhost:8080/api/auth/oauth2/logout";
+      const defaultLogoutUrl = "http://localhost:8080/api/auth/logout";
       
-      const logoutUrl = isGoogleUser 
-        ? "http://localhost:8080/api/auth/oauth2/logout"
-        : "http://localhost:8080/api/auth/logout";
-      
-      const response = await fetch(logoutUrl, {
+      if (isGoogleUser) {
+        try {
+          const oauthResponse = await fetch(googleLogoutUrl, {
+            method: "POST",
+            credentials: "include",
+          });
+          if (!oauthResponse.ok) {
+            console.warn(`구글 로그아웃 API 오류: ${oauthResponse.status}`);
+          }
+          clearGoogleSession();
+        } catch (error) {
+          console.info("구글 로그아웃 요청 중 오류가 발생했지만 무시합니다.");
+        }
+      }
+
+      const response = await fetch(defaultLogoutUrl, {
         method: "POST",
         credentials: "include",
       });
@@ -31,7 +58,7 @@ export default function Navigation() {
       console.error("로그아웃 오류:", error);
     } finally {
       dispatch(logout());
-      router.push("/");
+      router.push("/login");
     }
   };
 
