@@ -287,10 +287,6 @@ function Header({ onToggleSidebar, user }) {
                   <span className="leading-[1.5]">내 채널</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-3 h-4 w-4 text-gray-600" />
-                <span className="leading-[1.5]">결제 및 멤버십</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-3 h-4 w-4 text-gray-600" />

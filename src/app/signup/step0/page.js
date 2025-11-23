@@ -78,7 +78,7 @@ export default function SignupStep0Page() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation />
+      <Navigation variant="landing" hideButtons={true} />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-32">

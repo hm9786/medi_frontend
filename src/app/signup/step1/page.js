@@ -8,24 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-// 1. 네비게이션 (헤더) 뼈대
-// (회원가입 단계에서는 로고만 보여주는 것이 깔끔합니다.)
-function Navigation() {
-  return (
-    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-sm z-50">
-      <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-        {/* 로고 (Comic Neue 폰트 적용) */}
-        <Link
-          href="/"
-          className="text-black text-4xl font-bold font-['Comic_Neue'] leading-[54px]"
-        >
-          Medi
-        </Link>
-      </nav>
-    </header>
-  );
-}
+import Navigation from "@/components/Navigation";
 
 // 2. 약관 텍스트 (임시 하드코딩)
 // (나중에 실제 약관 텍스트로 이 부분을 교체하세요)
@@ -101,7 +84,7 @@ export default function SignupStep1Page() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation />
+      <Navigation variant="landing" />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-center items-center pt-20">
