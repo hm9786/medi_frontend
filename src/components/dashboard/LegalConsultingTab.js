@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Scale } from 'lucide-react';
+import { Send, Scale, Loader2, AlertCircle, Bot, User } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-// data prop으로 채널의 '법률 상담' 데이터를 받습니다.
-export function LegalConsultingTab({ data }) {
+// ✅ channelId를 부모 컴포넌트로부터 직접 받습니다.
+export function LegalConsultingTab({ data, channelId }) {
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      content: '안녕하세요! 악플 신고 관련 법률 상담을 도와드리는 법률 상담 챗봇입니다. 궁금하신 내용을 물어보세요.',
+      content: '안녕하세요! 유튜브 법률 상담 AI입니다. \n악플 신고나 법적 대응에 대해 궁금한 점을 물어보세요.\n(예: "이 댓글 모욕죄 성립될까?", "명예훼손 판례 찾아줘")',
       timestamp: new Date(),
     },
   ]);
@@ -20,7 +22,7 @@ export function LegalConsultingTab({ data }) {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // 메시지가 추가될 때마다 스크롤을 맨 아래로
+  // 메시지가 추가될 때마다 스크롤 하단으로 이동
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -28,8 +30,20 @@ export function LegalConsultingTab({ data }) {
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    if (!channelId) {
+      const errorMessage = {
+        id: Date.now(),
+        type: 'bot',
+        content: '채널 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+
+    // 1. 사용자 메시지 화면에 즉시 추가
     const userMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       type: 'user',
       content: inputValue,
       timestamp: new Date(),
@@ -40,32 +54,61 @@ export function LegalConsultingTab({ data }) {
     setIsLoading(true);
 
     try {
-      // TODO: 백엔드 API 연동
-      // const response = await fetch('http://localhost:8080/api/legal/consult', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   credentials: 'include',
-      //   body: JSON.stringify({ question: inputValue }),
-      // });
-      // const data = await response.json();
+      // 2. 대화 히스토리 구성 (백엔드 DTO 형식에 맞춤: role, content)
+      const conversationHistory = messages
+        .filter(msg => msg.id !== 1) // 초기 환영 메시지 제외
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
 
-      // 임시 응답 (백엔드 연동 전)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+      // 3. 백엔드 API 요청 (단일 응답 방식)
+      const response = await fetch('http://localhost:8080/api/chatbot/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // 세션 인증 쿠키 포함
+        body: JSON.stringify({
+          channelId: String(channelId),       // DTO: channelId
+          message: userMessage.content,       // DTO: message
+          conversationHistory: conversationHistory // DTO: conversationHistory
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error("로그인이 필요합니다.");
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+
+      const resData = await response.json();
+
+      if (!resData.success) {
+        throw new Error(resData.response || "AI 응답 실패");
+      }
+
+      // 4. 봇 응답 추가
       const botResponse = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         type: 'bot',
-        content: `"${userMessage.content}"에 대한 법률 상담 답변입니다.\n\n악플 신고와 관련된 법률 정보를 제공해드립니다. 구체적인 사항은 전문 법률가와 상담하시기 바랍니다.`,
+        content: resData.response,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, botResponse]);
+
     } catch (error) {
       console.error('법률 상담 오류:', error);
+      
+      let errorMsg = '죄송합니다. 잠시 후 다시 시도해주세요.';
+      if (error.message === "로그인이 필요합니다.") {
+        errorMsg = "로그인 세션이 만료되었습니다. 다시 로그인해주세요.";
+      }
+
       const errorMessage = {
-        id: messages.length + 2,
+        id: Date.now() + 2,
         type: 'bot',
-        content: '죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        content: errorMsg,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -82,81 +125,103 @@ export function LegalConsultingTab({ data }) {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scale className="size-5" />
-            법률 상담
-          </CardTitle>
+    <div className="space-y-6 h-[calc(100vh-220px)] min-h-[600px]">
+      <Card className="h-full flex flex-col border-gray-200 shadow-sm">
+        <CardHeader className="border-b pb-4 bg-white rounded-t-xl flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Scale className="size-6 text-blue-600" />
+            <div>
+              <CardTitle className="text-lg">법률 AI 상담소</CardTitle>
+              <CardDescription className="text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 text-orange-500" />
+                AI 답변은 법적 효력이 없으며 참고용으로만 활용하세요.
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {/* 챗봇 메시지 영역 */}
-          <div className="h-[500px] overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+        
+        <CardContent className="flex-1 p-0 flex flex-col overflow-hidden bg-slate-50">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message) => (
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-900 border border-gray-200'
-                  }`}
+                  key={message.id}
+                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                  {message.type === 'bot' && (
+                    <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                      <AvatarFallback className="bg-blue-50 text-blue-600">
+                        <Bot size={16} />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+                      message.type === 'user'
+                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'
+                    }`}
+                  >
                     {message.content}
-                  </p>
-                  <p className="text-xs mt-2 opacity-70">
-                    {message.timestamp.toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                    <p className={`text-[10px] mt-1 text-right ${
+                      message.type === 'user' ? 'text-blue-100' : 'text-gray-400'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+
+                  {message.type === 'user' && (
+                    <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                      <AvatarFallback className="bg-gray-100 text-gray-600">
+                        <User size={16} />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              ))}
+              
+              {isLoading && (
+                <div className="flex gap-3 justify-start">
+                  <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                    <AvatarFallback className="bg-blue-50 text-blue-600">
+                      <Bot size={16} />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <span className="text-xs text-gray-500">법률 데이터를 분석 중입니다...</span>
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
 
-          {/* 입력 영역 */}
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex gap-2">
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="악플 신고 관련 법률에 대해 물어보세요..."
-                className="flex-1"
+                placeholder="궁금한 내용을 입력하세요..."
+                className="flex-1 focus-visible:ring-blue-600"
                 disabled={isLoading}
               />
               <Button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isLoading}
-                className="shrink-0"
+                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white w-12"
               >
-                <Send className="size-4" />
+                {isLoading ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              법률 상담은 참고용이며, 구체적인 법률 문제는 전문 법률가와 상담하시기 바랍니다.
-            </p>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-

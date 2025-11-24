@@ -180,7 +180,7 @@ function Sidebar({ isSidebarExpanded, currentView, activeTab, handleBackToChanne
 }
 
 // 2. 헤더 컴포넌트 (수정된 폰트 적용)
-function Header({ onToggleSidebar, user }) {
+function Header({ onToggleSidebar, user, onBackToChannels }) {
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -248,12 +248,12 @@ function Header({ onToggleSidebar, user }) {
           >
             <Menu className="size-5 text-gray-700" />
           </Button>
-          <Link
-            href="/dashboard"
-            className="text-lg sm:text-xl font-bold text-black transition-colors hover:opacity-80"
+          <button
+            onClick={onBackToChannels}
+            className="text-lg sm:text-xl font-bold text-black transition-colors hover:opacity-80 cursor-pointer"
           >
             MEDI
-          </Link>
+          </button>
         </div>
         
         {/* 우측: 사용자 프로필 */}
@@ -352,6 +352,7 @@ export default function DashboardLayout({ children }) {
         <Header 
           onToggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)}
           user={user}
+          onBackToChannels={handleBackToChannels}
         />
         
         <div className="flex flex-1 overflow-hidden">

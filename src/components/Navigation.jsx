@@ -21,7 +21,7 @@ export default function Navigation({ hideButtons = false }) {
               </Link>
               <Link href="/signup/step0">
                 <Button size="sm" className="text-xs sm:text-sm bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                  무료로 시작하기
+                  회원가입
                 </Button>
               </Link>
             </>

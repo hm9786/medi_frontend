@@ -35,13 +35,12 @@ import { LegalConsultingTab } from "@/components/dashboard/LegalConsultingTab";
 
 import { DashboardContext } from "@/context/DashboardContext";
 
-// 1. 채널 목록 뷰
+// 1. 채널 목록 뷰 (기존 동일)
 function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDeleteChannel, onAddChannel }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [channelStats, setChannelStats] = useState({}); // 채널별 통계 저장
+  const [channelStats, setChannelStats] = useState({}); 
 
-  // 📌 [추가됨] 채널 목록이 로드되면 각 채널의 필터링 통계를 가져옴
   useEffect(() => {
     if (channels && channels.length > 0) {
       channels.forEach(async (channel) => {
@@ -154,7 +153,6 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
           {channels?.map(channel => {
             const status = getChannelStatus(channel.lastSyncedAt);
             const authExpiry = getAuthExpiry(channel.lastSyncedAt);
-            // 📌 [수정됨] 상태(State)에서 해당 채널의 필터링 개수를 가져옴
             const filteredCount = channelStats[channel.id] || 0;
             
             return (
@@ -170,10 +168,10 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
                   <div className="flex items-center gap-6 mb-4">
                     {channel.thumbnailUrl ? (
                       <img
-                      src={channel.thumbnailUrl}
-                      alt={channel.channelName || '채널'}
-                      className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
-                    />
+                        src={channel.thumbnailUrl}
+                        alt={channel.channelName || '채널'}
+                        className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
+                      />
                     ) : (
                       <div 
                         className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 bg-red-600"
@@ -239,7 +237,6 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
                 <CardContent>
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                     <span className="text-gray-600 text-sm leading-[1.5]">필터링된 댓글</span>
-                    {/* 📌 [수정됨] API로 가져온 실제 필터링 개수 표시 */}
                     <span className="text-gray-900 font-bold text-lg leading-[1.5]">{filteredCount.toLocaleString()}개</span>
                   </div>
                 </CardContent>
@@ -252,7 +249,7 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
   );
 }
 
-// 2. 채널 상세 뷰
+// 2. 채널 상세 뷰 (수정됨)
 function ChannelDetailView({ channelId, activeTab }) {
   const [channel, setChannel] = useState(null); 
   
@@ -295,22 +292,20 @@ function ChannelDetailView({ channelId, activeTab }) {
       setIsLoading(true);
       
       try {
-        // Overview 탭: 채널별 비디오 목록 조회 + 📌 [추가됨] 채널 통계 조회
+        // Overview 탭: 채널별 비디오 목록 조회 + 채널 통계 조회
         if (activeTab === 'overview') {
-          // 1. 비디오 목록 조회
           const videosResponse = await fetch(`http://localhost:8080/api/youtube/videos/channel/${channelId}`, {
             method: "GET",
             credentials: "include",
           });
           
-          // 2. 📌 [추가됨] 채널 통계(필터링 개수 등) 조회
           const statsResponse = await fetch(`http://localhost:8080/api/user/dashboard/channels/${channelId}/filtering-statistics`, {
             method: "GET",
             credentials: "include",
           });
           
           let formattedVideos = [];
-          let channelStatistics = {}; // 통계 저장용 객체
+          let channelStatistics = {}; 
 
           if (videosResponse.ok) {
             const videos = await videosResponse.json();
@@ -332,7 +327,7 @@ function ChannelDetailView({ channelId, activeTab }) {
             
           setOverviewData({
             videos: formattedVideos,
-            stats: channelStatistics, // 📌 OverviewTab에 전달할 통계 데이터
+            stats: channelStatistics, 
             categories: channelStatistics.categoryDistribution || [], 
             monthlyData: [], 
           });
@@ -342,7 +337,8 @@ function ChannelDetailView({ channelId, activeTab }) {
         } else if (activeTab === 'badcomments') {
           setBadCommentsData({});
         } else if (activeTab === 'legal') {
-          setLegalData({});
+          // 📌 [중요] 여기서 channelId를 반드시 포함시켜야 챗봇이 채널 정보를 알 수 있습니다.
+          setLegalData({ channelId: channelId });
         }
       } catch (err) {
         console.error("탭 데이터 로드 실패:", err);
@@ -391,6 +387,7 @@ function ChannelDetailView({ channelId, activeTab }) {
       case 'badcomments':
         return <BadCommentsTab data={badCommentsData} />;
       case 'legal':
+        // 📌 LegalConsultingTab에 legalData 전달 (안에 channelId 포함됨)
         return <LegalConsultingTab data={legalData} />;
       default:
         return <OverviewTab data={overviewData} />;
@@ -404,12 +401,11 @@ function ChannelDetailView({ channelId, activeTab }) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <img
+              <img
                 src={channel.thumbnailUrl}
                 alt={channel.channelName}
                 className="size-20 rounded-full object-cover ring-4 ring-white shadow-sm"
               />
-              
               <div className="flex-1">
                 <h1 className="text-3xl font-medium font-['Inter'] text-gray-900 mb-2 leading-[1.5]">{channel.channelName}</h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-black mb-3 leading-[1.5]">
@@ -481,7 +477,6 @@ export default function DashboardPage() {
       }
 
       await response.json();
-      // 동기화 후 채널 목록 다시 불러오기
       await fetchChannels();
       alert("채널 동기화가 완료되었습니다.");
     } catch (err) {
