@@ -70,9 +70,13 @@ export function LegalConsultingTab({ data, channelId }) {
         },
         credentials: 'include', // 세션 인증 쿠키 포함
         body: JSON.stringify({
-          channelId: String(channel_Id),       // DTO: channelId
-          message: userMessage.content,       // DTO: message
-          conversation_History: conversationHistory // DTO: conversationHistory
+          // 🚨 [수정됨] 백엔드 @JsonProperty("channel_id")와 일치시킴
+          channel_id: String(channelId), 
+          
+          message: userMessage.content, 
+          
+          // 🚨 [수정됨] 백엔드 @JsonProperty("conversation_history")와 일치시킴
+          conversation_history: conversationHistory 
         }),
       });
 
