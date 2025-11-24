@@ -24,7 +24,7 @@ import {
   BarChart3, //  탭 아이콘
   Lightbulb, //  탭 아이콘
   Shield,    //  탭 아이콘
-  Scale,     //  탭 아이콘 (법률 상담)
+  Scale,     //  탭 아이콘 (법률 상담 챗봇봇)
   ExternalLink //  외부 링크 아이콘
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

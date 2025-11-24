@@ -78,6 +78,7 @@ export function LegalConsultingTab({ data, channelId }) {
 
       if (!response.ok) {
         if (response.status === 401) throw new Error("로그인이 필요합니다.");
+        if (response.status === 500) throw new Error("챗봇 서버 연결 실패");
         throw new Error(`서버 오류: ${response.status}`);
       }
 
@@ -103,6 +104,8 @@ export function LegalConsultingTab({ data, channelId }) {
       let errorMsg = '죄송합니다. 잠시 후 다시 시도해주세요.';
       if (error.message === "로그인이 필요합니다.") {
         errorMsg = "로그인 세션이 만료되었습니다. 다시 로그인해주세요.";
+      } else if (error.message.includes("Connection refused") || error.message.includes("서버 오류: 500")) {
+        errorMsg = "챗봇 서버가 실행되지 않았습니다. 관리자에게 문의해주세요.";
       }
 
       const errorMessage = {

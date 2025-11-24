@@ -387,8 +387,8 @@ function ChannelDetailView({ channelId, activeTab }) {
       case 'badcomments':
         return <BadCommentsTab data={badCommentsData} />;
       case 'legal':
-        // 📌 LegalConsultingTab에 legalData 전달 (안에 channelId 포함됨)
-        return <LegalConsultingTab data={legalData} />;
+        // 📌 LegalConsultingTab에 legalData와 channelId 전달
+        return <LegalConsultingTab data={legalData} channelId={channelId} />;
       default:
         return <OverviewTab data={overviewData} />;
     }
