@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Scale, Loader2, AlertCircle, Bot, User } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-// ✅ channelId를 부모 컴포넌트로부터 직접 받습니다.
+// ScrollArea 대신 기본 div 스크롤을 사용하기 위해 import 제거
+// import { ScrollArea } from '@/components/ui/scroll-area';
+
 export function LegalConsultingTab({ data, channelId }) {
   const [messages, setMessages] = useState([
     {
@@ -54,29 +55,26 @@ export function LegalConsultingTab({ data, channelId }) {
     setIsLoading(true);
 
     try {
-      // 2. 대화 히스토리 구성 (백엔드 DTO 형식에 맞춤: role, content)
+      // 2. 대화 히스토리 구성 (백엔드 DTO 형식에 맞춤)
       const conversationHistory = messages
-        .filter(msg => msg.id !== 1) // 초기 환영 메시지 제외
+        .filter(msg => msg.id !== 1)
         .map(msg => ({
           role: msg.type === 'user' ? 'user' : 'assistant',
           content: msg.content
         }));
 
-      // 3. 백엔드 API 요청 (단일 응답 방식)
+      // 3. 백엔드 API 요청
       const response = await fetch('http://localhost:8080/api/chatbot/chat', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // 세션 인증 쿠키 포함
+        credentials: 'include',
         body: JSON.stringify({
-          // 🚨 [수정됨] 백엔드 @JsonProperty("channel_id")와 일치시킴
-          channel_id: String(channelId), 
-          
-          message: userMessage.content, 
-          
-          // 🚨 [수정됨] 백엔드 @JsonProperty("conversation_history")와 일치시킴
-          conversation_history: conversationHistory 
+          // ✅ 백엔드 DTO(@JsonProperty)와 일치하도록 snake_case 사용
+          channel_id: String(channelId),
+          message: userMessage.content,
+          conversation_history: conversationHistory
         }),
       });
 
@@ -147,8 +145,11 @@ export function LegalConsultingTab({ data, channelId }) {
           </div>
         </CardHeader>
         
+        {/* ✅ 수정됨: flex-1 overflow-hidden으로 전체 영역을 잡고 */}
         <CardContent className="flex-1 p-0 flex flex-col overflow-hidden bg-slate-50">
-          <ScrollArea className="flex-1 p-4">
+          
+          {/* ✅ 수정됨: ScrollArea 대신 기본 div에 overflow-y-auto 적용하여 확실한 스크롤 보장 */}
+          <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
@@ -156,7 +157,7 @@ export function LegalConsultingTab({ data, channelId }) {
                   className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.type === 'bot' && (
-                    <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                    <Avatar className="w-8 h-8 border bg-white shadow-sm flex-shrink-0">
                       <AvatarFallback className="bg-blue-50 text-blue-600">
                         <Bot size={16} />
                       </AvatarFallback>
@@ -182,7 +183,7 @@ export function LegalConsultingTab({ data, channelId }) {
                   </div>
 
                   {message.type === 'user' && (
-                    <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                    <Avatar className="w-8 h-8 border bg-white shadow-sm flex-shrink-0">
                       <AvatarFallback className="bg-gray-100 text-gray-600">
                         <User size={16} />
                       </AvatarFallback>
@@ -193,7 +194,7 @@ export function LegalConsultingTab({ data, channelId }) {
               
               {isLoading && (
                 <div className="flex gap-3 justify-start">
-                  <Avatar className="w-8 h-8 border bg-white shadow-sm">
+                  <Avatar className="w-8 h-8 border bg-white shadow-sm flex-shrink-0">
                     <AvatarFallback className="bg-blue-50 text-blue-600">
                       <Bot size={16} />
                     </AvatarFallback>
@@ -206,7 +207,7 @@ export function LegalConsultingTab({ data, channelId }) {
               )}
               <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex gap-2">
