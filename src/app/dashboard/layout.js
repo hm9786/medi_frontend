@@ -236,8 +236,8 @@ function Header({ onToggleSidebar, user }) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center flex-shrink-0 z-10">
-      <div className="flex items-center justify-between w-full">
+    <header className="w-full bg-white border-b border-slate-200 flex items-center flex-shrink-0 z-10">
+      <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         {/* 왼쪽: 로고 및 메뉴 토글 */}
         <div className="flex items-center gap-4">
           <Button
@@ -250,9 +250,9 @@ function Header({ onToggleSidebar, user }) {
           </Button>
           <Link
             href="/dashboard"
-            className="text-black text-4xl font-bold font-['Comic_Neue'] leading-none flex items-center"
+            className="text-lg sm:text-xl font-bold text-black transition-colors hover:opacity-80"
           >
-            Medi
+            MEDI
           </Link>
         </div>
         
