@@ -126,10 +126,10 @@
                   className={`flex items-center w-full py-2.5 h-12 rounded-lg
                     ${isSidebarExpanded ? 'gap-3 justify-start px-3' : 'justify-center'}
                   `}
-                  title={!isSidebarExpanded ? '법률 상담' : ''}
+                  title={!isSidebarExpanded ? '법률 상담 챗봇봇' : ''}
                 >
                   <Scale className="size-5 flex-shrink-0" />
-                  {isSidebarExpanded && <span className="font-medium text-base leading-[1.5]">법률 상담</span>}
+                  {isSidebarExpanded && <span className="font-medium text-base leading-[1.5]">법률 상담 챗봇</span>}
                 </Button>
               </div>
             </>

@@ -261,126 +261,81 @@ export function OverviewTab({ data, channel }) {
         </div>
       )}
 
-      {/* 1. 상단 메트릭 카드 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        
-        {/* 카드 1: 이번 달 차단된 악플 */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">이번 달 차단된 악플</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" style={{ color: 'var(--medi-primary)' }} />
+      {/* 2. 📌 [구현완료] 필터링 추이 그래프 */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="h-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>필터링 추이</CardTitle>
+                <CardDescription>
+                  {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
+                  {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
+                  {filterPeriod === 'year' && '최근 1년간의 활동입니다'}
+                </CardDescription>
+              </div>
+              {/* 기간 선택 셀렉트 박스 */}
+              <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">일별 (7일)</SelectItem>
+                  <SelectItem value="month">월별 (30일)</SelectItem>
+                  <SelectItem value="year">연별 (1년)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: 'var(--medi-primary-dark)' }}>
-              {thisMonthFiltered.toLocaleString()}개
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="inline-flex items-center text-green-600">
-                <TrendingUp className="mr-1 h-3 w-3" /> Live
-              </span>{' '}
-              실시간 보호 중
-            </p>
+            {isChartLoading ? (
+              <div className="h-[480px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={480}>
+                <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0}]}>
+                  <defs>
+                    <linearGradient id="colorFiltered" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4F9DDE" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#4F9DDE" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: '#6B7280', fontSize: 12 }} 
+                    axisLine={{ stroke: '#E5E7EB' }} 
+                    minTickGap={30}
+                  />
+                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                    formatter={(value) => [`${value}건`, '차단된 댓글']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="filtered" 
+                    stroke="#4F9DDE" 
+                    strokeWidth={2}
+                    fill="url(#colorFiltered)" 
+                    name="필터링 댓글" 
+                    animationDuration={1000}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
-
-        {/* 카드 2: MEDI가 아껴드린 시간 */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">MEDI가 아껴드린 시간</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle> </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700">
-              약 {savedHours}시간 {savedMins}분
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              이번 달 필터링 기준 
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* 카드 3: 감소된 스트레스 지수 */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">감소된 스트레스 지수</CardTitle>
-            <Brain className="h-4 w-4" style={{ color: stressInfo.color }} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" style={{ color: stressInfo.color }}>
-              {stressInfo.level}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stressInfo.description}
-            </p>
+          
           </CardContent>
         </Card>
       </div>
-
-      {/* 2. 📌 [구현완료] 필터링 추이 그래프 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>필터링 추이</CardTitle>
-              <CardDescription>
-                {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
-                {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
-                {filterPeriod === 'year' && '최근 1년간의 활동입니다'}
-              </CardDescription>
-            </div>
-            {/* 기간 선택 셀렉트 박스 */}
-            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">일별 (7일)</SelectItem>
-                <SelectItem value="month">월별 (30일)</SelectItem>
-                <SelectItem value="year">연별 (1년)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isChartLoading ? (
-            <div className="h-[350px] flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0}]}>
-                <defs>
-                  <linearGradient id="colorFiltered" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4F9DDE" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#4F9DDE" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#6B7280', fontSize: 12 }} 
-                  axisLine={{ stroke: '#E5E7EB' }} 
-                  minTickGap={30}
-                />
-                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  formatter={(value) => [`${value}건`, '차단된 댓글']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="filtered" 
-                  stroke="#4F9DDE" 
-                  strokeWidth={2}
-                  fill="url(#colorFiltered)" 
-                  name="필터링 댓글" 
-                  animationDuration={1000}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
 
       {/* 3. 민심 온도계 및 영상 목록 (기존 유지) */}
       <Card>

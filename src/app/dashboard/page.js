@@ -386,8 +386,6 @@ function ChannelDetailView({ channelId, activeTab }) {
     switch (activeTab) {
       case 'overview':
         return <OverviewTab data={overviewData} channel={channel} />;
-      case 'consulting':
-        return <ContentConsultingTab data={consultingData} />;
       case 'badcomments':
         return <BadCommentsTab data={badCommentsData} />;
       case 'legal':
