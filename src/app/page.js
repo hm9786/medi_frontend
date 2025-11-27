@@ -56,20 +56,21 @@ export default function Home() {
           <div className="max-w-[1600px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-20">
             
             {/* [왼쪽 방] 텍스트 영역 */}
-            <div className="flex-1 w-full text-center lg:text-left lg:-mt-30 z-10">
+            <div className="flex-1 w-full text-center lg:text-left md:-mt-20 lg:-mt-30 z-10">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[3.8rem] font-extrabold tracking-tight mb-4 sm:mb-6 leading-tight">
                 <span className="block text-slate-900 transition-colors">
                   유튜브 크리에이터를 위한
                 </span>
                 <span className="block text-blue-600 transition-colors">
-                  댓글 관리 솔루션
+                  댓글 관리 AI 에이전트
                 </span>
+               
               </h1>
               
               <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 max-w-2xl mx-auto lg:mx-0 transition-colors px-2">
-                메디는 AI 기반의 스마트 댓글 관리 도구로, 크리에이터의 정신적 육체적 부담을
+                메디는 AI 기반의 스마트 댓글 관리 AI에이전트 서비스로 
                 <br className="hidden sm:block" />
-                덜어주고, 컨텐츠의 질을 향상시킵니다.
+                크리에이터의 정신적 육체적 부담을 덜어주고 컨텐츠의 질을 향상시킵니다
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start px-2">

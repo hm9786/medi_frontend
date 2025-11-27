@@ -97,7 +97,7 @@ frontend/
 │   │   │   ├── OverviewTab.js          # 전체 요약 탭
 │   │   │   ├── MentalCareTab.js        # 멘탈 케어 탭
 │   │   │   ├── ContentConsultingTab.js # 콘텐츠 컨설팅 탭
-│   │   │   ├── BadCommentsTab.js       # 원본 악플보기 탭
+│   │   │   ├── BadCommentsTab.js       # 악플 보고서 보기 탭
 │   │   │   └── VideoDetailTab.js       # 영상 상세 탭
 │   │   └── ui/                 # shadcn/ui 기반 UI 컴포넌트
 │   │
@@ -134,7 +134,7 @@ frontend/
 - **전체 요약**: 최근 영상 목록, 댓글 분석 요약
 - **멘탈 케어**: 댓글 감정 분석 및 멘탈 건강 지표
 - **콘텐츠 컨설팅**: 영상 성과 분석 및 개선 제안
-- **원본 악플보기**: 필터링된 부정적 댓글 조회
+- **악플 보고서 보기**: 필터링된 부정적 댓글 보고서
 
 ---
 

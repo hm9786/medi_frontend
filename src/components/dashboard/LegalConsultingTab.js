@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Scale, Loader2, AlertCircle, Bot, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { apiUrl } from '@/lib/config';
 
 // ScrollArea 대신 기본 div 스크롤을 사용하기 위해 import 제거
 // import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,7 +65,7 @@ export function LegalConsultingTab({ data, channelId }) {
         }));
 
       // 3. 백엔드 API 요청
-      const response = await fetch('http://localhost:8080/api/chatbot/chat', {
+      const response = await fetch(apiUrl('api/chatbot/chat'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

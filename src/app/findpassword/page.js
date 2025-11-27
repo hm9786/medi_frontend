@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import { apiUrl } from "@/lib/config";
 
 // 에러/성공 메시지 표시 헬퍼 컴포넌트
 const FormMessage = ({ name, errors, success }) => {
@@ -152,7 +153,7 @@ export default function FindPasswordPage() {
     setErrors((prev) => ({ ...prev, email: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/send-password-reset", {
+      const response = await fetch(apiUrl("api/auth/send-password-reset"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -223,7 +224,7 @@ export default function FindPasswordPage() {
     setSuccess((prev) => ({ ...prev, authCode: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/verify-email", {
+      const response = await fetch(apiUrl("api/auth/verify-email"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,7 +321,7 @@ export default function FindPasswordPage() {
     setErrors((prev) => ({ ...prev, submit: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/reset-password", {
+      const response = await fetch(apiUrl("api/auth/reset-password"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -29,11 +29,11 @@ import {
 import { Badge } from "@/components/ui/badge"; 
 
 import { OverviewTab } from "@/components/dashboard/OverviewTab";
-import { ContentConsultingTab } from "@/components/dashboard/ContentConsultingTab";
 import { BadCommentsTab } from "@/components/dashboard/BadCommentsTab";
 import { LegalConsultingTab } from "@/components/dashboard/LegalConsultingTab";
 
 import { DashboardContext } from "@/context/DashboardContext";
+import { apiUrl } from "@/lib/config";
 
 // 1. 채널 목록 뷰 (기존 동일)
 function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDeleteChannel, onAddChannel }) {
@@ -45,7 +45,7 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
     if (channels && channels.length > 0) {
       channels.forEach(async (channel) => {
         try {
-          const response = await fetch(`http://localhost:8080/api/user/dashboard/channels/${channel.id}/filtering-statistics`, {
+          const response = await fetch(apiUrl(`api/user/dashboard/channels/${channel.id}/filtering-statistics`), {
             method: "GET",
             credentials: "include",
           });
@@ -268,7 +268,7 @@ function ChannelDetailView({ channelId, activeTab }) {
       if (!channelId) return;
       setIsHeaderLoading(true);
       try {
-        const response = await fetch(`http://localhost:8080/api/youtube/channels/${channelId}`, {
+        const response = await fetch(apiUrl(`api/youtube/channels/${channelId}`), {
           method: "GET",
           credentials: "include",
         });
@@ -294,12 +294,12 @@ function ChannelDetailView({ channelId, activeTab }) {
       try {
         // Overview 탭: 채널별 비디오 목록 조회 + 채널 통계 조회
         if (activeTab === 'overview') {
-          const videosResponse = await fetch(`http://localhost:8080/api/youtube/videos/channel/${channelId}`, {
+          const videosResponse = await fetch(apiUrl(`api/youtube/videos/channel/${channelId}`), {
             method: "GET",
             credentials: "include",
           });
           
-          const statsResponse = await fetch(`http://localhost:8080/api/user/dashboard/channels/${channelId}/filtering-statistics`, {
+          const statsResponse = await fetch(apiUrl(`api/user/dashboard/channels/${channelId}/filtering-statistics`), {
             method: "GET",
             credentials: "include",
           });
@@ -309,16 +309,20 @@ function ChannelDetailView({ channelId, activeTab }) {
 
           if (videosResponse.ok) {
             const videos = await videosResponse.json();
-            formattedVideos = videos.map(video => ({
-              id: video.id,
-              title: video.title,
-              thumbnail: video.thumbnailUrl,
-              date: new Date(video.publishedAt).toLocaleDateString('ko-KR'),
-              viewCount: video.viewCount,
-              likeCount: video.likeCount,
-              commentCount: video.commentCount,
-              youtubeVideoId: video.youtubeVideoId,
-            }));
+            formattedVideos = videos.map(video => {
+              const rawPublishedAt = video.publishedAt || video.published_at || null;
+              return {
+                id: video.id,
+                title: video.title,
+                thumbnail: video.thumbnailUrl,
+                publishedAt: rawPublishedAt,
+                date: rawPublishedAt ? new Date(rawPublishedAt).toLocaleDateString('ko-KR') : null,
+                viewCount: video.viewCount,
+                likeCount: video.likeCount,
+                commentCount: video.commentCount,
+                youtubeVideoId: video.youtubeVideoId,
+              };
+            });
           }
 
           if (statsResponse.ok) {
@@ -381,7 +385,7 @@ function ChannelDetailView({ channelId, activeTab }) {
 
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab data={overviewData} />;
+        return <OverviewTab data={overviewData} channel={channel} />;
       case 'consulting':
         return <ContentConsultingTab data={consultingData} />;
       case 'badcomments':
@@ -390,36 +394,12 @@ function ChannelDetailView({ channelId, activeTab }) {
         // 📌 LegalConsultingTab에 legalData와 channelId 전달
         return <LegalConsultingTab data={legalData} channelId={channel?.youtubeChannelId} />;
       default:
-        return <OverviewTab data={overviewData} />;
+        return <OverviewTab data={overviewData} channel={channel} />;
     }
   };
 
   return (
     <div className="p-8">
-      {/* 채널 헤더 */}
-      <div className="mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <img
-                src={channel.thumbnailUrl}
-                alt={channel.channelName}
-                className="size-20 rounded-full object-cover ring-4 ring-white shadow-sm"
-              />
-              <div className="flex-1">
-                <h1 className="text-3xl font-medium font-['Inter'] text-gray-900 mb-2 leading-[1.5]">{channel.channelName}</h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-black mb-3 leading-[1.5]">
-                  <span>{channel.channelHandle}</span>
-                  <span>•</span>
-                  <span> 구독자 {(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()}명 </span>
-                </div>
-              </div>
-
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {renderTabContent()}
     </div>
   );
@@ -441,7 +421,7 @@ export default function DashboardPage() {
   const fetchChannels = useCallback(async () => {
     setError(null);
     try {
-      const response = await fetch("http://localhost:8080/api/youtube/channels/my", {
+      const response = await fetch(apiUrl("api/youtube/channels/my"), {
         method: "GET",
         credentials: "include",
       });
@@ -464,7 +444,7 @@ export default function DashboardPage() {
 
   const handleSyncChannels = useCallback(async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/youtube/channels/sync?syncVideos=true", {
+      const response = await fetch(apiUrl("api/youtube/channels/sync?syncVideos=true"), {
         method: "POST",
         credentials: "include",
       });
@@ -486,7 +466,7 @@ export default function DashboardPage() {
 
   const handleAddChannel = async () => {
     try {
-      const authResponse = await fetch("http://localhost:8080/api/auth/me", {
+      const authResponse = await fetch(apiUrl("api/auth/me"), {
         method: "GET",
         credentials: "include",
       });
@@ -497,7 +477,7 @@ export default function DashboardPage() {
         }
         throw new Error("세션 확인 실패");
       }
-      window.location.href = "http://localhost:8080/api/youtube/connect";
+      window.location.href = apiUrl("api/youtube/connect");
     } catch (err) {
       alert("채널 추가에 실패했습니다. 다시 시도해주세요.");
     }
@@ -508,7 +488,7 @@ export default function DashboardPage() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8080/api/youtube/channels/${channelId}`, {
+      const response = await fetch(apiUrl(`api/youtube/channels/${channelId}`), {
         method: "DELETE",
         credentials: "include",
       });

@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
+import { apiUrl } from '@/lib/config';
+
 
 // 스트레스 지수 계산 헬퍼
 function calculateStressLevel(dailyCount) {
@@ -25,9 +27,29 @@ function getWeatherInfo(status) {
   return { icon: CloudRain, text: '뇌우', color: '#6366F1', bgColor: '#EEF2FF' };
 }
 
-export function OverviewTab({ data }) {
+function formatPublishedDate(publishedAt) {
+  if (!publishedAt) return '방금 전';
+  const date = new Date(publishedAt);
+  if (Number.isNaN(date.getTime())) return '방금 전';
+  return date.toISOString().split('T')[0];
+}
+
+// YouTube 썸네일 품질 개선
+function getHighResThumbnail(url) {
+  if (!url) return url;
+  if (url.includes('ytimg.com')) {
+    return url
+      .replace('default.jpg', 'hqdefault.jpg')
+      .replace('mqdefault.jpg', 'hqdefault.jpg')
+      .replace('hqdefault.jpg', 'hqdefault.jpg'); // ensure highest available
+  }
+  return url;
+}
+
+export function OverviewTab({ data, channel }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videoPage, setVideoPage] = useState(0);
   
   // 📌 그래프용 State
   const [filterPeriod, setFilterPeriod] = useState('day'); // day, month, year
@@ -36,7 +58,7 @@ export function OverviewTab({ data }) {
 
   // 1. 데이터 추출
   const stats = data?.stats || {};
-  const channelId = stats.channelId; // 📌 그래프 조회 시 필요
+  const channelId = stats.channelId || channel?.id; // 📌 그래프 조회 시 필요
 
   const thisMonthFiltered = stats.thisMonthFilteredCount || 0;
   const totalFiltered = stats.totalFilteredCount || 0;
@@ -78,7 +100,7 @@ export function OverviewTab({ data }) {
       try {
         // 백엔드 API 호출 (channelId 필터링 포함)
         const response = await fetch(
-          `http://localhost:8080/api/user/dashboard/filtering-trend?from=${from}&to=${to}&channelId=${channelId}`, 
+          apiUrl(`api/user/dashboard/filtering-trend?from=${from}&to=${to}&channelId=${channelId}`), 
           { method: 'GET', credentials: 'include' }
         );
 
@@ -105,8 +127,8 @@ export function OverviewTab({ data }) {
     fetchTrendData();
   }, [filterPeriod, channelId]); // 기간이나 채널이 바뀌면 재실행
 
-  // 영상 목록 필터링
-  const recentVideos = data?.videos || []; 
+  // 채널 통계 계산 및 영상 목록 필터링
+  const recentVideos = data?.videos || [];
   const filteredVideos = recentVideos.filter(video => 
     video.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -116,6 +138,26 @@ export function OverviewTab({ data }) {
     return dateB - dateA;
   });
 
+  const videosPerPage = 6;
+  const totalVideoPages = Math.max(1, Math.ceil(sortedVideos.length / videosPerPage));
+  const clampedVideoPage = Math.min(videoPage, totalVideoPages - 1);
+  const paginatedVideos = sortedVideos.slice(
+    clampedVideoPage * videosPerPage,
+    (clampedVideoPage + 1) * videosPerPage
+  );
+
+  const handlePrevVideos = () => {
+    setVideoPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextVideos = () => {
+    setVideoPage(prev => Math.min(totalVideoPages - 1, prev + 1));
+  };
+
+  useEffect(() => {
+    setVideoPage(0);
+  }, [searchQuery]);
+
   if (selectedVideo) {
     return <VideoDetailTab video={selectedVideo} onBack={() => setSelectedVideo(null)} />;
   }
@@ -123,9 +165,102 @@ export function OverviewTab({ data }) {
   if (!data) {
     return <div className="p-8 text-center text-gray-500">데이터를 불러오는 중입니다...</div>;
   }
+  const totalViews = recentVideos.reduce((sum, video) => sum + (video.viewCount || 0), 0);
+  const totalComments = recentVideos.reduce((sum, video) => sum + (video.commentCount || 0), 0);
+  const totalVideos = recentVideos.length;
+  
+  // 재연동 필요 여부 확인
+  const getChannelStatus = (lastSyncedAt) => {
+    if (!lastSyncedAt) return { status: 'warning', authExpiry: 'D-?' };
+    const syncedDate = new Date(lastSyncedAt);
+    const expiryDate = new Date(syncedDate);
+    expiryDate.setDate(expiryDate.getDate() + 60);
+    const today = new Date();
+    const diffTime = expiryDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 7) {
+      return { 
+        status: 'warning', 
+        authExpiry: diffDays > 0 ? `D-${diffDays}` : '만료됨' 
+      };
+    }
+    return { status: 'normal', authExpiry: null };
+  };
+  
+  const channelStatus = channel ? getChannelStatus(channel.lastSyncedAt) : null;
+  const isVideoDetailView = selectedVideo !== null;
 
   return (
     <div className="space-y-6">
+      {/* 채널 대시보드 제목 */}
+      {!isVideoDetailView && channel && (
+        <h2 className="text-black mb-6" style={{ fontWeight: 700, fontSize: '34px' }}>
+          채널 대시보드
+        </h2>
+      )}
+      
+      {/* 채널 정보 카드 - 영상 대시보드일 때는 숨김 */}
+      {!isVideoDetailView && channel && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* 왼쪽 카드: 썸네일 + 채널명 + 핸들명 */}
+          <Card>
+            <CardContent className="pt-3 pb-3">
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  src={channel.thumbnailUrl}
+                  alt={channel.channelName}
+                  className="size-32 rounded-full object-cover ring-4 ring-gray-100 -mt-2"
+                />
+                <div className="text-center mt-2">
+                  <h1 className="text-gray-900 mb-2 font-semibold" style={{ fontSize: '24px' }}>{channel.channelName}</h1>
+                  <p className="text-gray-600">{channel.channelHandle}</p>
+                </div>
+                {channelStatus?.status === 'warning' && (
+                  <Badge variant="outline" className="text-orange-600 border-orange-600">
+                    <Clock className="size-3 mr-1" />
+                    재연동 필요 ({channelStatus.authExpiry})
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 중간 카드: 구독자수, 총 조회수, 총 댓글 수, 총 동영상 수 */}
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 h-full lg:justify-center">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
+                  <span className="text-gray-600 text-sm lg:text-base">구독자 수</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
+                  <span className="text-gray-600 text-sm lg:text-base">총 조회수</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
+                  <span className="text-gray-600 text-sm lg:text-base">총 댓글 수</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}</span>
+                </div>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                  <span className="text-gray-600 text-sm lg:text-base">총 동영상 수</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalVideos}개</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 오른쪽 카드: 빈 카드 섹션 */}
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="h-full">
+                {/* 빈 카드 섹션 */}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* 1. 상단 메트릭 카드 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         
@@ -268,8 +403,8 @@ export function OverviewTab({ data }) {
               총 <span className="font-medium text-gray-900">{sortedVideos.length}</span>개 영상
             </div>
           </div>
-          <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-            {sortedVideos.map((video) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedVideos.map((video) => {
               const score = (video.id * 17) % 41 + 60; 
               const weather = getWeatherInfo(score);
               const WeatherIcon = weather.icon;
@@ -277,40 +412,69 @@ export function OverviewTab({ data }) {
               return (
                 <div
                   key={video.id}
-                  className="group flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer bg-white"
+                  className="group flex flex-col rounded-3xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all cursor-pointer"
                   onClick={() => setSelectedVideo(video)}
                 >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <img
-                      src={video.thumbnail}
-                      alt={video.title}
-                      className="w-24 h-14 rounded object-cover flex-shrink-0 bg-gray-200"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-sm text-gray-900 line-clamp-1 mb-1">{video.title}</h5>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>조회수 {video.viewCount?.toLocaleString()}</span>
-                        <span>•</span>
-                        <span>댓글 {video.commentCount?.toLocaleString()}</span>
+                  <div className="relative w-full pt-[56.25%] overflow-hidden rounded-3xl bg-gray-100">
+                    {video.thumbnail && (
+                      <img
+                        src={getHighResThumbnail(video.thumbnail)}
+                        alt={video.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 px-3 pb-3 pt-4 flex-1">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-semibold text-sm text-gray-900 line-clamp-2">
+                          {video.title}
+                        </h5>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex flex-col items-end gap-1 ml-4">
-                    <div
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-full"
-                      style={{ backgroundColor: weather.bgColor }}
-                    >
-                      <WeatherIcon className="h-4 w-4" style={{ color: weather.color }} />
-                      <span className="text-xs font-bold" style={{ color: weather.color }}>
-                        {weather.text}
-                      </span>
+                    <div className="mt-auto">
+                      <div className="flex items-center justify-between text-xs text-gray-500 pb-2">
+                        <span>조회수 {video.viewCount?.toLocaleString()}회</span>
+                        <span>{formatPublishedDate(video.publishedAt || video.published_at)}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-opacity-70"
+                          style={{ backgroundColor: weather.bgColor }}
+                        >
+                          <WeatherIcon className="h-4 w-4" style={{ color: weather.color }} />
+                          <span className="text-xs font-semibold" style={{ color: weather.color }}>
+                            {weather.text}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-400">건전도 {score}%</span>
+                      </div>
                     </div>
-                    <span className="text-xs text-gray-400">건전도 {score}%</span>
                   </div>
                 </div>
               );
             })}
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handlePrevVideos}
+              disabled={clampedVideoPage === 0}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              이전
+            </button>
+            <span className="text-sm text-gray-500">
+              {clampedVideoPage + 1} / {totalVideoPages}
+            </span>
+            <button
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handleNextVideos}
+              disabled={clampedVideoPage >= totalVideoPages - 1}
+            >
+              다음
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </CardContent>
       </Card>

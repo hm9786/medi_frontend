@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +10,23 @@ import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertT
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import { apiUrl } from '@/lib/config';
 
 export function VideoDetailTab({ video, onBack }) {
+  const router = useRouter();
   const [videoInfo, setVideoInfo] = useState(null); // 유튜브 기본 정보
   const [stats, setStats] = useState(null);         // 필터링 통계
   const [chartData, setChartData] = useState([]);   // 그래프 데이터
   const [filterPeriod, setFilterPeriod] = useState('day'); // 📌 기간 필터 상태 추가
   const [isLoading, setIsLoading] = useState(true);
   const [isChartLoading, setIsChartLoading] = useState(false);
+  const [hasAcknowledgedWarning, setHasAcknowledgedWarning] = useState(false);
+  const [isOriginalLoading, setIsOriginalLoading] = useState(false);
+  const [originalComments, setOriginalComments] = useState([]);
+  const [originalError, setOriginalError] = useState(null);
+  const [currentOriginalPage, setCurrentOriginalPage] = useState(0);
+
+  const COMMENTS_PER_PAGE = 5;
 
   // 1. 초기 데이터 로드 (비디오 정보 & 통계)
   useEffect(() => {
@@ -25,8 +35,8 @@ export function VideoDetailTab({ video, onBack }) {
       setIsLoading(true);
       try {
         const [basicRes, statsRes] = await Promise.all([
-          fetch(`http://localhost:8080/api/youtube/videos/${video.id}`, { method: "GET", credentials: "include" }),
-          fetch(`http://localhost:8080/api/user/dashboard/videos/${video.id}/filtering-statistics`, { method: 'GET', credentials: 'include' })
+          fetch(apiUrl(`api/youtube/videos/${video.id}`), { method: "GET", credentials: "include" }),
+          fetch(apiUrl(`api/user/dashboard/videos/${video.id}/filtering-statistics`), { method: 'GET', credentials: 'include' })
         ]);
 
         if (basicRes.ok) setVideoInfo(await basicRes.json());
@@ -60,7 +70,7 @@ export function VideoDetailTab({ video, onBack }) {
       try {
         // 📌 videoId를 파라미터로 전달하여 해당 영상의 추이만 조회
         const response = await fetch(
-          `http://localhost:8080/api/user/dashboard/filtering-trend?from=${from}&to=${to}&videoId=${video.id}`,
+          apiUrl(`api/user/dashboard/filtering-trend?from=${from}&to=${to}&videoId=${video.id}`),
           { method: 'GET', credentials: 'include' }
         );
 
@@ -82,6 +92,97 @@ export function VideoDetailTab({ video, onBack }) {
 
     fetchTrendData();
   }, [video, filterPeriod]); // video나 filterPeriod가 바뀌면 실행
+
+  // 3. 원본 악플 데이터 로드 (경고 동의 후, 또는 영상 전환 시 재로드)
+  useEffect(() => {
+    if (hasAcknowledgedWarning) {
+      fetchOriginalComments();
+    } else {
+      // 경고창을 다시 보게 되면 목록도 초기화
+      setOriginalComments([]);
+      setCurrentOriginalPage(0);
+      setOriginalError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id, hasAcknowledgedWarning]);
+
+  // 페이지 수가 줄었을 때 현재 페이지를 안전하게 조정
+  useEffect(() => {
+    const totalPages = Math.ceil(originalComments.length / COMMENTS_PER_PAGE);
+    if (totalPages > 0 && currentOriginalPage > totalPages - 1) {
+      setCurrentOriginalPage(totalPages - 1);
+    }
+  }, [originalComments, currentOriginalPage, COMMENTS_PER_PAGE]);
+
+  const fetchOriginalComments = async () => {
+    if (!video?.id) return;
+    setIsOriginalLoading(true);
+    setOriginalError(null);
+    try {
+      const response = await fetch(
+        apiUrl(`api/user/dashboard/videos/${video.id}/original-comments`),
+        { method: 'GET', credentials: 'include' }
+      );
+
+      if (!response.ok) {
+        throw new Error(`원본 악플 API 오류: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const rawList = Array.isArray(payload?.comments)
+        ? payload.comments
+        : Array.isArray(payload)
+          ? payload
+          : payload?.data || [];
+
+      const normalized = rawList
+        .map((item, index) => ({
+          id: item.id || item.commentId || item.youtubeCommentId || `comment-${index}`,
+          author: item.author || item.authorName || item.authorDisplayName || '익명',
+          content: item.content || item.text || item.textOriginal || item.text_original || '',
+          publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
+        }))
+        .filter((comment) => comment.content?.trim());
+
+      setOriginalComments(normalized);
+      setCurrentOriginalPage(0);
+    } catch (error) {
+      console.error('원본 악플 로드 실패:', error);
+      setOriginalError('원본 악플을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsOriginalLoading(false);
+    }
+  };
+
+  const handleWarningConfirm = () => {
+    setHasAcknowledgedWarning(true);
+  };
+
+  const totalOriginalPages = Math.ceil(originalComments.length / COMMENTS_PER_PAGE);
+  const paginatedOriginalComments = originalComments.slice(
+    currentOriginalPage * COMMENTS_PER_PAGE,
+    currentOriginalPage * COMMENTS_PER_PAGE + COMMENTS_PER_PAGE
+  );
+
+  const handlePrevComments = () => {
+    setCurrentOriginalPage((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNextComments = () => {
+    if (totalOriginalPages === 0) return;
+    setCurrentOriginalPage((prev) => Math.min(totalOriginalPages - 1, prev + 1));
+  };
+
+  const handleReportClick = () => {
+    router.push('/dashboard?tab=legal');
+  };
+
+  const formatPublishedAt = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
+  };
 
   if (isLoading) {
     return (
@@ -111,7 +212,7 @@ export function VideoDetailTab({ video, onBack }) {
         className="mb-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 pl-0"
       >
         <ArrowLeft className="size-4 mr-2" />
-        전체 요약으로 돌아가기
+        채널 대시보드로 돌아가기
       </Button>
 
       {/* 1. 영상 정보 및 요약 통계 */}
@@ -265,6 +366,130 @@ export function VideoDetailTab({ video, onBack }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* 3. 원본 악플 접근 경고 및 목록 */}
+      {!hasAcknowledgedWarning ? (
+        <Card className="border border-red-200 bg-red-50">
+          <CardContent className="p-6 flex flex-col gap-6">
+            <div>
+              <Badge className="bg-red-600 hover:bg-red-600 text-white text-xs mb-3">필터링된 악플 원본</Badge>
+              <h3 className="text-xl font-bold text-red-800 mb-2">주의: 원본 악플 내용이 포함되어 있습니다</h3>
+              <p className="text-sm leading-relaxed text-red-700">
+                악성 댓글은 이미 시청자에게 보이지 않지만, 원본 확인 시 심리적 충격이 있을 수 있습니다.
+                필요한 경우 즉시 페이지 하단의 법률 상담을 이용하세요.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 text-sm text-red-700">
+              <p>• 악성 댓글은 자동으로 차단되어 공개되지 않습니다.</p>
+              <p>• 원본 확인 시 신중하게 진행해주세요.</p>
+              <p>• 법적 대응이 필요하면 즉시 전문가와 상담하세요.</p>
+            </div>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white py-6 text-base font-semibold"
+              onClick={handleWarningConfirm}
+            >
+              원본 내용 확인하기
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-red-200 bg-white">
+          <CardHeader className="pb-2">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                  <AlertTriangle className="size-5 text-red-500" />
+                  원본 악성 댓글 목록
+                </CardTitle>
+                <CardDescription className="mt-1 text-sm text-gray-500">
+                  한 페이지에 {COMMENTS_PER_PAGE}개씩 열람할 수 있습니다. 고소 버튼을 누르면 법률 상담 탭으로 이동합니다.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50"
+                onClick={handleReportClick}
+              >
+                법률 상담 바로가기
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isOriginalLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="size-6 animate-spin text-red-500" />
+              </div>
+            ) : originalError ? (
+              <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-5 text-sm text-red-700">
+                {originalError}
+              </div>
+            ) : originalComments.length === 0 ? (
+              <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+                현재 확인 가능한 원본 악플이 없습니다.
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {paginatedOriginalComments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500">작성자</p>
+                          <p className="font-semibold text-gray-900">{comment.author}</p>
+                        </div>
+                        <div className="text-left md:text-right">
+                          <p className="text-xs text-gray-500">게시일자</p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {formatPublishedAt(comment.publishedAt)}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={handleReportClick}
+                        >
+                          고소
+                        </Button>
+                      </div>
+                      <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-gray-800">
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-200"
+                    onClick={handlePrevComments}
+                    disabled={currentOriginalPage === 0}
+                  >
+                    이전
+                  </Button>
+                  <span className="text-sm font-medium text-gray-600">
+                    {totalOriginalPages === 0 ? '0 / 0' : `${currentOriginalPage + 1} / ${totalOriginalPages}`}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-200"
+                    onClick={handleNextComments}
+                    disabled={
+                      totalOriginalPages === 0 || currentOriginalPage >= totalOriginalPages - 1
+                    }
+                  >
+                    다음
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

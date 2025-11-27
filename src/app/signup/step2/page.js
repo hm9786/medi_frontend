@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import { apiUrl } from "@/lib/config";
 
 // 10. 에러/성공 메시지 표시 헬퍼 컴포넌트
 // (컴포넌트 바깥에 정의하여 ESLint 에러를 방지합니다)
@@ -124,7 +125,7 @@ export default function SignupStep2Page() {
     setErrors((prev) => ({ ...prev, email: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/send-verification", {
+      const response = await fetch(apiUrl("api/auth/send-verification"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -188,7 +189,7 @@ export default function SignupStep2Page() {
     setErrors((prev) => ({ ...prev, authCode: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/verify-email", {
+      const response = await fetch(apiUrl("api/auth/verify-email"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -270,7 +271,7 @@ export default function SignupStep2Page() {
 
     try {
       // 회원가입 API 호출
-      const response = await fetch("http://localhost:8080/api/auth/register", {
+      const response = await fetch(apiUrl("api/auth/register"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

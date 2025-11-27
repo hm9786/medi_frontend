@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { restoreSession } from "@/lib/slices/authSlice";
+import { apiUrl } from "@/lib/config";
 
 export default function AuthInitializer() {
   const dispatch = useDispatch();
@@ -13,7 +14,7 @@ export default function AuthInitializer() {
     // 앱 초기 로드 시 세션 확인
     const checkSession = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/auth/me", {
+        const response = await fetch(apiUrl("api/auth/me"), {
           method: "GET",
           credentials: "include",
           signal: controller.signal,

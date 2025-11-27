@@ -6,6 +6,7 @@ import Link from "next/link";
 // Navigation 컴포넌트의 경로가 올바른지 확인하세요.
 // 이 코드는 Navigation.jsx 파일이 src/components/에 있다고 가정합니다.
 import Navigation from "@/components/Navigation"; 
+import { apiUrl, API_BASE_URL } from "@/lib/config";
 
 // 1. 구글 로고 아이콘 (SVG 컴포넌트)
 // (피그마의 div 4개 대신, 깔끔한 SVG를 사용합니다)
@@ -48,7 +49,7 @@ export default function SignupStep0Page() {
     try {
       setIsLoading(true);
       // 구글 OAuth 로그인 URL 조회
-      const response = await fetch("http://localhost:8080/api/auth/oauth2/google/url", {
+      const response = await fetch(apiUrl("api/auth/oauth2/google/url"), {
         method: "GET",
         credentials: "include",
       });
@@ -65,7 +66,7 @@ export default function SignupStep0Page() {
       // URL이 상대 경로인 경우 백엔드 base URL과 결합
       const redirectUrl = data.url.startsWith("http") 
         ? data.url 
-        : `http://localhost:8080${data.url}`;
+        : `${API_BASE_URL}${data.url}`;
       
       window.location.href = redirectUrl;
     } catch (error) {
