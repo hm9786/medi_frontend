@@ -106,10 +106,11 @@ export function OverviewTab({ data, channel }) {
 
         if (response.ok) {
           const trendData = await response.json();
-          // Recharts용 데이터 변환
+          // Recharts용 데이터 변환 (총 댓글 수 포함)
           const formattedData = trendData.map(item => ({
             name: item.date,
-            filtered: item.filteredCount,
+            filtered: item.filteredCount ?? 0,
+            total: item.totalCount ?? 0,
           }));
           setChartData(formattedData);
         } else {
@@ -250,11 +251,13 @@ export function OverviewTab({ data, channel }) {
             </CardContent>
           </Card>
 
-          {/* 오른쪽 카드: 빈 카드 섹션 */}
+          {/* 오른쪽 카드: 이번 달 필터링 현황 */}
           <Card>
-            <CardContent className="pt-4 pb-4">
-              <div className="h-full">
-                {/* 빈 카드 섹션 */}
+            <CardContent className="pt-5 pb-5 h-full flex flex-col justify-between">
+              <div>
+                <p className="text-sm text-gray-500">이번 달 필터링된 댓글</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{thisMonthFiltered.toLocaleString()}건</p>
+                
               </div>
             </CardContent>
           </Card>
@@ -294,11 +297,15 @@ export function OverviewTab({ data, channel }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={480}>
-                <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0}]}>
+                <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
                   <defs>
                     <linearGradient id="colorFiltered" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4F9DDE" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#4F9DDE" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
@@ -311,7 +318,10 @@ export function OverviewTab({ data, channel }) {
                   <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                    formatter={(value) => [`${value}건`, '차단된 댓글']}
+                    formatter={(value, name) => [
+                      `${Number(value).toLocaleString()}건`,
+                      name === '필터링 댓글' ? '차단된 댓글' : '총 댓글'
+                    ]}
                   />
                   <Area 
                     type="monotone" 
@@ -320,6 +330,15 @@ export function OverviewTab({ data, channel }) {
                     strokeWidth={2}
                     fill="url(#colorFiltered)" 
                     name="필터링 댓글" 
+                    animationDuration={1000}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="#94A3B8" 
+                    strokeWidth={2}
+                    fill="url(#colorTotal)" 
+                    name="총 댓글" 
                     animationDuration={1000}
                   />
                 </AreaChart>

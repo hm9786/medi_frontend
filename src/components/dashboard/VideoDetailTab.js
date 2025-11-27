@@ -1,16 +1,104 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { apiUrl } from '@/lib/config';
+
+const MOCK_ORIGINAL_COMMENTS = [
+  {
+    id: 'mock-1',
+    author: '악성유저123',
+    content: '이런 저런 욕설과 비방이 담긴 댓글입니다...ㄹㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷ',
+    likes: 3,
+    publishedAt: '2025-11-20T09:00:00Z',
+  },
+  {
+    id: 'mock-2',
+    author: '트롤러456',
+    content: '부적절한 내용과 혐오 발언이 포함된 댓글...',
+    likes: 1,
+    publishedAt: '2025-11-21T09:00:00Z',
+  },
+  {
+    id: 'mock-3',
+    author: '스팸계정789',
+    content: '광고성 스팸 댓글 내용이 여기에 표시됩니다...',
+    likes: 0,
+    publishedAt: '2025-11-22T09:00:00Z',
+  },
+  {
+    id: 'mock-4',
+    author: '악플러000',
+    content: '악의적인 비난과 인신공격성 댓글입니다...',
+    likes: 5,
+    publishedAt: '2025-11-23T09:00:00Z',
+  },
+  {
+    id: 'mock-5',
+    author: '문제유저111',
+    content: '허위사실 유포 및 명예훼손 내용 댓글...',
+    likes: 2,
+    publishedAt: '2025-11-24T09:00:00Z',
+  },
+  {
+    id: 'mock-6',
+    author: '나쁜사람222',
+    content: '차별적 발언과 혐오 표현이 담긴 댓글...',
+    likes: 4,
+    publishedAt: '2025-11-25T09:00:00Z',
+  },
+  {
+    id: 'mock-7',
+    author: '악성333',
+    content: '위협적이고 공격적인 내용의 댓글입니다...',
+    likes: 1,
+    publishedAt: '2025-11-26T09:00:00Z',
+  },
+  {
+    id: 'mock-8',
+    author: '트롤444',
+    content: '선정적이고 부적절한 내용이 포함된 댓글...',
+    likes: 0,
+    publishedAt: '2025-11-27T09:00:00Z',
+  },
+];
+
+const getStressBadgeInfo = (averageCount) => {
+  if (averageCount >= 40) {
+    return {
+      label: '위험',
+      description: '상시 모니터링이 필요한 수준입니다.',
+      badgeClass: 'bg-red-100 text-red-700 border-red-200',
+    };
+  }
+  if (averageCount >= 20) {
+    return {
+      label: '주의',
+      description: '필터링 빈도가 높습니다. 추세를 확인하세요.',
+      badgeClass: 'bg-orange-100 text-orange-700 border-orange-200',
+    };
+  }
+  if (averageCount >= 5) {
+    return {
+      label: '보통',
+      description: '안정적으로 관리되고 있습니다.',
+      badgeClass: 'bg-blue-100 text-blue-700 border-blue-200',
+    };
+  }
+  return {
+    label: '안정',
+    description: '필터링 빈도가 매우 낮습니다.',
+    badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  };
+};
 
 export function VideoDetailTab({ video, onBack }) {
   const router = useRouter();
@@ -25,8 +113,30 @@ export function VideoDetailTab({ video, onBack }) {
   const [originalComments, setOriginalComments] = useState([]);
   const [originalError, setOriginalError] = useState(null);
   const [currentOriginalPage, setCurrentOriginalPage] = useState(0);
+  const [visibleOriginalComments, setVisibleOriginalComments] = useState(() => new Set());
+  const [sortBy, setSortBy] = useState('date');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortDropdownRef = useRef(null);
 
   const COMMENTS_PER_PAGE = 5;
+
+  useEffect(() => {
+    setVisibleOriginalComments(new Set());
+    setShowSortDropdown(false);
+    setSortBy('date');
+    setCurrentOriginalPage(0);
+  }, [video?.id, hasAcknowledgedWarning]);
+
+  useEffect(() => {
+    if (!showSortDropdown) return;
+    const handleClickOutside = (event) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+        setShowSortDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSortDropdown]);
 
   // 1. 초기 데이터 로드 (비디오 정보 & 통계)
   useEffect(() => {
@@ -78,7 +188,8 @@ export function VideoDetailTab({ video, onBack }) {
           const trendJson = await response.json();
           const formattedTrend = trendJson.map(t => ({
             date: t.date.substring(5).replace('-', '/'), // MM/DD 형식
-            filtered: t.filteredCount // 📌 필터링된 댓글 수만 사용
+            filtered: t.filteredCount ?? 0,
+            total: t.totalCount ?? 0,
           }));
           setChartData(formattedTrend);
         }
@@ -108,7 +219,8 @@ export function VideoDetailTab({ video, onBack }) {
 
   // 페이지 수가 줄었을 때 현재 페이지를 안전하게 조정
   useEffect(() => {
-    const totalPages = Math.ceil(originalComments.length / COMMENTS_PER_PAGE);
+    const sourceLength = originalComments.length > 0 ? originalComments.length : MOCK_ORIGINAL_COMMENTS.length;
+    const totalPages = Math.ceil(sourceLength / COMMENTS_PER_PAGE);
     if (totalPages > 0 && currentOriginalPage > totalPages - 1) {
       setCurrentOriginalPage(totalPages - 1);
     }
@@ -141,6 +253,7 @@ export function VideoDetailTab({ video, onBack }) {
           author: item.author || item.authorName || item.authorDisplayName || '익명',
           content: item.content || item.text || item.textOriginal || item.text_original || '',
           publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
+          likes: Number(item.likeCount ?? item.likes ?? item.like ?? 0) || 0,
         }))
         .filter((comment) => comment.content?.trim());
 
@@ -158,11 +271,28 @@ export function VideoDetailTab({ video, onBack }) {
     setHasAcknowledgedWarning(true);
   };
 
-  const totalOriginalPages = Math.ceil(originalComments.length / COMMENTS_PER_PAGE);
-  const paginatedOriginalComments = originalComments.slice(
+  const isUsingMockComments = originalComments.length === 0;
+  const effectiveOriginalComments = isUsingMockComments ? MOCK_ORIGINAL_COMMENTS : originalComments;
+  const sortedOriginalComments = [...effectiveOriginalComments].sort((a, b) => {
+    if (sortBy === 'likes') {
+      return (b.likes || 0) - (a.likes || 0);
+    }
+    const dateA = new Date(a.publishedAt || a.date || 0).getTime();
+    const dateB = new Date(b.publishedAt || b.date || 0).getTime();
+    return dateB - dateA;
+  });
+  const totalOriginalPages = Math.ceil(sortedOriginalComments.length / COMMENTS_PER_PAGE);
+  const paginatedOriginalComments = sortedOriginalComments.slice(
     currentOriginalPage * COMMENTS_PER_PAGE,
     currentOriginalPage * COMMENTS_PER_PAGE + COMMENTS_PER_PAGE
   );
+  const paginationRangeStart =
+    sortedOriginalComments.length === 0 ? 0 : currentOriginalPage * COMMENTS_PER_PAGE + 1;
+  const paginationRangeEnd =
+    sortedOriginalComments.length === 0
+      ? 0
+      : Math.min((currentOriginalPage + 1) * COMMENTS_PER_PAGE, sortedOriginalComments.length);
+  const shouldLockCommentCardHeight = paginatedOriginalComments.length >= COMMENTS_PER_PAGE;
 
   const handlePrevComments = () => {
     setCurrentOriginalPage((prev) => Math.max(0, prev - 1));
@@ -171,6 +301,24 @@ export function VideoDetailTab({ video, onBack }) {
   const handleNextComments = () => {
     if (totalOriginalPages === 0) return;
     setCurrentOriginalPage((prev) => Math.min(totalOriginalPages - 1, prev + 1));
+  };
+
+  const handleToggleVisibility = (commentId) => {
+    setVisibleOriginalComments((prev) => {
+      const next = new Set(prev);
+      if (next.has(commentId)) {
+        next.delete(commentId);
+      } else {
+        next.add(commentId);
+      }
+      return next;
+    });
+  };
+
+  const handleSortChange = (option) => {
+    setSortBy(option);
+    setShowSortDropdown(false);
+    setCurrentOriginalPage(0);
   };
 
   const handleReportClick = () => {
@@ -199,6 +347,17 @@ export function VideoDetailTab({ video, onBack }) {
   const filteringRate = totalComments > 0 
     ? ((filteredComments / totalComments) * 100).toFixed(1) 
     : '0.0';
+  const todayFilteredCount = stats?.todayFilteredCount ?? stats?.todayFiltered ?? 0;
+  const recentWeekFilteredCount = stats?.recent7DaysFilteredCount ?? stats?.weekFilteredCount ?? 0;
+  const legalFlaggedCount =
+    stats?.legalFlaggedCount ??
+    stats?.legalReviewRecommendationCount ??
+    stats?.legalConsultingRecommendedCount ??
+    0;
+  const dailyAverageFiltered = recentWeekFilteredCount
+    ? Math.max(1, Math.round(recentWeekFilteredCount / 7))
+    : Math.max(0, Math.round(filteredComments / Math.max(chartData.length || 1, 7)));
+  const stressInfo = getStressBadgeInfo(dailyAverageFiltered);
 
   // 그래프 최신 값 (범례용)
   const lastChartValue = chartData.length > 0 ? chartData[chartData.length - 1].filtered : 0;
@@ -324,7 +483,7 @@ export function VideoDetailTab({ video, onBack }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <LineChart data={chartData.length > 0 ? chartData : [{ date: '데이터 없음', filtered: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis 
                     dataKey="date" 
@@ -347,7 +506,10 @@ export function VideoDetailTab({ video, onBack }) {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                     itemStyle={{ fontSize: '12px', fontWeight: '500' }}
-                    formatter={(value) => [`${value}개`, '차단된 댓글']}
+                    formatter={(value, name) => [
+                      `${Number(value).toLocaleString()}개`,
+                      name
+                    ]}
                   />
                   {/* 📌 필터링 댓글 라인 하나만 표시 */}
                   <Line 
@@ -360,6 +522,16 @@ export function VideoDetailTab({ video, onBack }) {
                     activeDot={{ r: 6 }}
                     animationDuration={1000}
                   />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total" 
+                    name="총 댓글"
+                    stroke="#94A3B8" 
+                    strokeWidth={2} 
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                    animationDuration={1000}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -367,128 +539,257 @@ export function VideoDetailTab({ video, onBack }) {
         </CardContent>
       </Card>
 
-      {/* 3. 원본 악플 접근 경고 및 목록 */}
-      {!hasAcknowledgedWarning ? (
-        <Card className="border border-red-200 bg-red-50">
-          <CardContent className="p-6 flex flex-col gap-6">
+      {/* 2-1. 필터링 현황 카드 */}
+      <Card className="border-none shadow-sm bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <Badge className="bg-red-600 hover:bg-red-600 text-white text-xs mb-3">필터링된 악플 원본</Badge>
-              <h3 className="text-xl font-bold text-red-800 mb-2">주의: 원본 악플 내용이 포함되어 있습니다</h3>
-              <p className="text-sm leading-relaxed text-red-700">
-                악성 댓글은 이미 시청자에게 보이지 않지만, 원본 확인 시 심리적 충격이 있을 수 있습니다.
-                필요한 경우 즉시 페이지 하단의 법률 상담을 이용하세요.
+              <CardTitle className="text-lg font-bold text-gray-900">필터링 건강 체크</CardTitle>
+              <CardDescription>{stressInfo.description}</CardDescription>
+            </div>
+            <Badge variant="outline" className={`px-3 py-1.5 text-sm font-semibold border ${stressInfo.badgeClass}`}>
+              {stressInfo.label}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50">
+              <p className="text-sm text-gray-500 mb-1">오늘 차단됨</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {todayFilteredCount.toLocaleString()}
+                <span className="text-sm font-medium text-gray-400 ml-1">개</span>
+              </p>
+              <p className="text-xs text-gray-500 mt-2">실시간 반영</p>
+            </div>
+            <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50">
+              <p className="text-sm text-blue-600 mb-1">주간 일평균</p>
+              <p className="text-2xl font-bold text-blue-700">
+                {dailyAverageFiltered.toLocaleString()}
+                <span className="text-sm font-medium text-blue-400 ml-1">개</span>
+              </p>
+              <p className="text-xs text-blue-600 mt-2">
+                최근 7일 총 {recentWeekFilteredCount.toLocaleString()}개
               </p>
             </div>
-            <div className="flex flex-col gap-2 text-sm text-red-700">
-              <p>• 악성 댓글은 자동으로 차단되어 공개되지 않습니다.</p>
-              <p>• 원본 확인 시 신중하게 진행해주세요.</p>
-              <p>• 법적 대응이 필요하면 즉시 전문가와 상담하세요.</p>
+            <div className="p-4 rounded-2xl border border-rose-100 bg-rose-50">
+              <p className="text-sm text-rose-600 mb-1">법률 검토 필요</p>
+              <p className="text-2xl font-bold text-rose-700">
+                {legalFlaggedCount.toLocaleString()}
+                <span className="text-sm font-medium text-rose-400 ml-1">건</span>
+              </p>
+              <p className="text-xs text-rose-600 mt-2">즉시 상담 권장</p>
             </div>
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white py-6 text-base font-semibold"
-              onClick={handleWarningConfirm}
-            >
-              원본 내용 확인하기
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border border-red-200 bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50">
+              <p className="text-sm text-emerald-600 mb-1">필터링 비율</p>
+              <p className="text-2xl font-bold text-emerald-700">{filteringRate}%</p>
+              <p className="text-xs text-emerald-600 mt-2">총 댓글 대비</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. 원본 악플 접근 경고 및 목록 */}
+      {!hasAcknowledgedWarning ? (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden min-h-[640px] flex flex-col">
+          <div className="bg-red-50 border-b border-red-200 p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-white rounded-full flex items-center justify-center border-2 border-red-300">
+                <ShieldAlert className="w-6 h-6 text-red-500" />
+              </div>
               <div>
-                <CardTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                  <AlertTriangle className="size-5 text-red-500" />
-                  원본 악성 댓글 목록
-                </CardTitle>
-                <CardDescription className="mt-1 text-sm text-gray-500">
-                  한 페이지에 {COMMENTS_PER_PAGE}개씩 열람할 수 있습니다. 고소 버튼을 누르면 법률 상담 탭으로 이동합니다.
-                </CardDescription>
+                <h3 className="text-2xl font-bold text-red-800 mb-2">주의: 원본 악성 댓글 열람 전 안내</h3>
+                <p className="text-red-600 text-sm">
+                  이 영상에서 차단된 {effectiveOriginalComments.length.toLocaleString()}개의 악성 댓글이 있습니다.
+                </p>
               </div>
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
-                onClick={handleReportClick}
-              >
-                법률 상담 바로가기
-              </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {isOriginalLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="size-6 animate-spin text-red-500" />
+          </div>
+          <div className="p-6 space-y-6 flex-1 flex flex-col justify-center">
+            <div className="bg-red-50 rounded-xl p-6 border border-red-200">
+              <div className="flex items-start gap-3 mb-4">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <h4 className="text-lg font-semibold text-red-700">보호 기능 안내</h4>
               </div>
-            ) : originalError ? (
-              <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-5 text-sm text-red-700">
-                {originalError}
+              <ul className="space-y-2 text-sm text-red-700 pl-1">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
+                  <span>악성 댓글은 이미 차단되어 시청자에게 보이지 않습니다.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
+                  <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
+                  <span>법적 대응이 필요하면 즉시 전문가와 상담하세요.</span>
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={handleWarningConfirm}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-base font-semibold"
+            >
+              <ShieldAlert className="w-5 h-5" />
+              원본 내용 확인하러 가기
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden flex flex-col ${
+            shouldLockCommentCardHeight ? 'min-h-[640px]' : ''
+          }`}
+        >
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-gray-200 p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-md">
+                  <ShieldAlert className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">필터링된 악성 댓글</h3>
+                  <p className="text-gray-600 text-sm">
+                    총 {sortedOriginalComments.length.toLocaleString()}개의 댓글이 차단되었습니다.
+                  </p>
+                </div>
               </div>
-            ) : originalComments.length === 0 ? (
-              <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                현재 확인 가능한 원본 악플이 없습니다.
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <div className="relative" ref={sortDropdownRef}>
+                  <button
+                    onClick={() => setShowSortDropdown((prev) => !prev)}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 flex items-center gap-2"
+                  >
+                    <span>{sortBy === 'date' ? '작성일 순' : '좋아요 순'}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  {showSortDropdown && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-10">
+                      <button
+                        onClick={() => handleSortChange('date')}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                          sortBy === 'date' ? 'bg-red-50 text-red-600 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        작성일 순
+                      </button>
+                      <button
+                        onClick={() => handleSortChange('likes')}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                          sortBy === 'likes' ? 'bg-red-50 text-red-600 font-semibold' : 'text-gray-700'
+                        }`}
+                      >
+                        좋아요 순
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="space-y-4">
-                  {paginatedOriginalComments.map((comment) => (
+            </div>
+          </div>
+
+          {originalError && (
+            <div className="px-6 py-4 bg-red-50 border-b border-red-100 text-sm text-red-700">
+              {originalError}
+            </div>
+          )}
+
+          {isOriginalLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="size-6 animate-spin text-red-500" />
+            </div>
+          ) : sortedOriginalComments.length === 0 ? (
+            <div className="p-10 text-center text-sm text-gray-500">
+              현재 확인 가능한 원본 악플이 없습니다.
+            </div>
+          ) : (
+            <>
+              <div className="divide-y divide-gray-100">
+                {paginatedOriginalComments.map((comment) => {
+                  const isVisible = visibleOriginalComments.has(comment.id);
+                  return (
                     <div
                       key={comment.id}
-                      className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5"
+                      className="p-4 sm:p-5 hover:bg-gray-50 transition-colors flex flex-col gap-4"
                     >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <p className="text-xs text-gray-500">작성자</p>
-                          <p className="font-semibold text-gray-900">{comment.author}</p>
-                        </div>
-                        <div className="text-left md:text-right">
-                          <p className="text-xs text-gray-500">게시일자</p>
-                          <p className="text-sm font-medium text-gray-800">
-                            {formatPublishedAt(comment.publishedAt)}
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+                        <div className="w-full lg:w-56 shrink-0">
+                          <p className="font-semibold text-gray-900">{comment.author || '익명'}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatPublishedAt(comment.publishedAt || comment.date)}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50"
-                          onClick={handleReportClick}
-                        >
-                          고소
-                        </Button>
+
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-gray-800 whitespace-pre-line leading-relaxed transition-all duration-300 ${
+                              !isVisible ? 'blur-md select-none pointer-events-none' : ''
+                            }`}
+                          >
+                            {comment.content}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 w-full lg:w-auto">
+                          <div className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
+                            <span role="img" aria-label="likes">
+                              ❤️
+                            </span>
+                            <span>{Number(comment.likes || 0)}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleToggleVisibility(comment.id)}
+                              className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium ${
+                                isVisible
+                                  ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                              }`}
+                            >
+                              <Eye className="w-4 h-4" />
+                              {isVisible ? '숨기기' : '보기'}
+                            </button>
+                            <button
+                              onClick={handleReportClick}
+                              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                            >
+                              <Scale className="w-4 h-4" />
+                              법률 상담
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-gray-800">
-                        {comment.content}
-                      </p>
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-gray-200"
+                  );
+                })}
+              </div>
+
+              <div className="bg-gray-50 border-t border-gray-200 p-6">
+                <div className="flex items-center justify-center gap-3">
+                  <button
                     onClick={handlePrevComments}
                     disabled={currentOriginalPage === 0}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
+                    <ChevronLeft className="w-4 h-4" />
                     이전
-                  </Button>
-                  <span className="text-sm font-medium text-gray-600">
+                  </button>
+                  <span className="text-sm text-gray-500">
                     {totalOriginalPages === 0 ? '0 / 0' : `${currentOriginalPage + 1} / ${totalOriginalPages}`}
                   </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-gray-200"
+                  <button
                     onClick={handleNextComments}
-                    disabled={
-                      totalOriginalPages === 0 || currentOriginalPage >= totalOriginalPages - 1
-                    }
+                    disabled={currentOriginalPage >= totalOriginalPages - 1}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     다음
-                  </Button>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

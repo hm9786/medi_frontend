@@ -131,7 +131,7 @@ export function LegalConsultingTab({ data, channelId }) {
   };
 
   return (
-    <div className="space-y-6 h-[calc(100vh-220px)] min-h-[600px]">
+    <div className="space-y-6 h-[calc(100vh-160px)] min-h-[720px]">
       <Card className="h-full flex flex-col border-gray-200 shadow-sm">
         <CardHeader className="border-b pb-4 bg-white rounded-t-xl flex-shrink-0">
           <div className="flex items-center gap-2">
