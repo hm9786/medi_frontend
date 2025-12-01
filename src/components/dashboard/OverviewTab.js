@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
 import { apiUrl } from '@/lib/config';
 
@@ -19,12 +19,25 @@ function calculateStressLevel(dailyCount) {
   return { level: '매우 높음', description: '위험해요 AI 풀가동 !', color: '#EF4444' };
 }
 
-// 날씨 정보 헬퍼
+// 날씨 정보 헬퍼 (영상별 건전도용)
 function getWeatherInfo(status) {
   if (status >= 95) return { icon: Sun, text: '화창함', color: '#FFD93D', bgColor: '#FFF9E6' };
   if (status >= 80) return { icon: Sun, text: '맑음', color: '#FFA500', bgColor: '#FFF4E6' };
   if (status >= 60) return { icon: Cloud, text: '흐림', color: '#9CA3AF', bgColor: '#F3F4F6' };
   return { icon: CloudRain, text: '뇌우', color: '#6366F1', bgColor: '#EEF2FF' };
+}
+
+// 채널 악플 현황 날씨 정보 헬퍼 (필터링 댓글 비율 기준)
+function getChannelWeatherInfo(filteringRatio) {
+  if (filteringRatio < 1) {
+    return { icon: Sun, text: '맑음', color: '#FFA500' };
+  } else if (filteringRatio >= 1 && filteringRatio < 5) {
+    return { icon: Cloud, text: '흐림', color: '#9CA3AF' };
+  } else if (filteringRatio >= 5 && filteringRatio < 10) {
+    return { icon: CloudRain, text: '우천', color: '#6366F1' };
+  } else {
+    return { icon: CloudRain, text: '뇌우', color: '#EF4444' };
+  }
 }
 
 function formatPublishedDate(publishedAt) {
@@ -55,6 +68,22 @@ export function OverviewTab({ data, channel }) {
   const [filterPeriod, setFilterPeriod] = useState('day'); // day, month, year
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
+  
+  // 📌 시간대별 필터링 데이터 (임시 하드코딩, 추후 API 연동)
+  const timePatternData = {
+    distribution: {
+      "새벽 (00-06시)": 12,
+      "오전 (06-12시)": 4,
+      "오후 (12-18시)": 12,
+      "저녁 (18-22시)": 3,
+      "심야 (22-24시)": 3
+    },
+    red_zone: {
+      time_slot: "새벽 (00-06시)",
+      count: 12,
+      percentage: 35.3
+    }
+  };
 
   // 1. 데이터 추출
   const stats = data?.stats || {};
@@ -203,7 +232,7 @@ export function OverviewTab({ data, channel }) {
       
       {/* 채널 정보 카드 - 영상 대시보드일 때는 숨김 */}
       {!isVideoDetailView && channel && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* 왼쪽 카드: 썸네일 + 채널명 + 핸들명 */}
           <Card>
             <CardContent className="pt-3 pb-3">
@@ -251,7 +280,7 @@ export function OverviewTab({ data, channel }) {
             </CardContent>
           </Card>
 
-          {/* 오른쪽 카드: 이번 달 필터링 현황 */}
+          {/* 오른쪽 카드 섹션: 이번 달 필터링 현황 (왼쪽) + 빈 카드 (오른쪽) */}
           <Card>
             <CardContent className="pt-5 pb-5 h-full flex flex-col justify-between">
               <div>
@@ -259,6 +288,45 @@ export function OverviewTab({ data, channel }) {
                 <p className="text-3xl font-bold text-gray-900 mt-1">{thisMonthFiltered.toLocaleString()}건</p>
                 
               </div>
+            </CardContent>
+          </Card>
+          
+          {/* 오른쪽 카드: 채널 악플 현황 날씨 */}
+          <Card>
+            <CardContent className="pt-5 pb-5 h-full flex flex-col items-center justify-center">
+              {(() => {
+                // 필터링 댓글 비율 계산
+                const filteringRatio = totalComments > 0 
+                  ? (totalFiltered / totalComments) * 100 
+                  : 0;
+                
+                // 날씨 정보 가져오기
+                const weatherInfo = getChannelWeatherInfo(filteringRatio);
+                const WeatherIcon = weatherInfo.icon;
+                
+                // 데이터가 없거나 표시할 수 없는 경우
+                if (totalComments === 0 || isNaN(filteringRatio)) {
+                  return (
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <Cloud className="size-16 text-gray-300" />
+                      <p className="text-sm text-gray-500 text-center">
+                        채널 날씨 데이터를 표시할 수 없습니다
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="flex flex-col items-center justify-between h-full w-full">
+                    <div className="flex-1 flex items-center justify-center">
+                      <WeatherIcon className="size-32" style={{ color: weatherInfo.color }} />
+                    </div>
+                    <p className="text-sm text-gray-600 text-center pb-2">
+                      현재 채널의 날씨는 <span className="font-bold text-gray-900" style={{ color: weatherInfo.color }}>{weatherInfo.text}</span>입니다
+                    </p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -270,7 +338,10 @@ export function OverviewTab({ data, channel }) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>필터링 추이</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="size-5 text-gray-500" />
+                  필터링 추이
+                </CardTitle>
                 <CardDescription>
                   {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
                   {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
@@ -348,10 +419,77 @@ export function OverviewTab({ data, channel }) {
         </Card>
         <Card className="h-full">
           <CardHeader>
-            <CardTitle> </CardTitle>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="size-5 text-gray-500" />
+                  악플 집중 시간대
+                </CardTitle>
+                <CardDescription>
+                  {(() => {
+                    const totalCount = Object.values(timePatternData.distribution).reduce((sum, val) => sum + val, 0);
+                    if (totalCount > 0 && timePatternData.red_zone.count > 0) {
+                      return (
+                        <span>
+                          <span className="font-semibold text-gray-900">{timePatternData.red_zone.time_slot}</span>에 
+                          전체 공격의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다.
+                        </span>
+                      );
+                    }
+                    return '시간대별 악플 집중 현황입니다';
+                  })()}
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-          
+            {(() => {
+              // 시간대 데이터 변환 (Object -> Array for Chart)
+              const timeChartData = Object.entries(timePatternData.distribution).map(([key, value]) => ({
+                name: key.split(' ')[0], // "새벽 (00-06시)" -> "새벽"
+                fullLabel: key,
+                count: value,
+                isRedZone: key === timePatternData.red_zone.time_slot
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height={480}>
+                  <BarChart data={timeChartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: '#6B7280', fontSize: 12 }} 
+                      axisLine={{ stroke: '#E5E7EB' }} 
+                      minTickGap={30}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#6B7280', fontSize: 12 }} 
+                      axisLine={{ stroke: '#E5E7EB' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+                              <p className="font-bold text-gray-900 mb-1">{data.fullLabel}</p>
+                              <p className="text-sm text-gray-600">악플 수: <span className="font-semibold">{data.count}건</span></p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={40}>
+                      {timeChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.isRedZone ? '#EF4444' : '#E5E7EB'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>

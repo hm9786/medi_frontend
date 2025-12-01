@@ -538,58 +538,7 @@ export function VideoDetailTab({ video, onBack }) {
           </div>
         </CardContent>
       </Card>
-
-      {/* 2-1. 필터링 현황 카드 */}
-      <Card className="border-none shadow-sm bg-white">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <CardTitle className="text-lg font-bold text-gray-900">필터링 건강 체크</CardTitle>
-              <CardDescription>{stressInfo.description}</CardDescription>
-            </div>
-            <Badge variant="outline" className={`px-3 py-1.5 text-sm font-semibold border ${stressInfo.badgeClass}`}>
-              {stressInfo.label}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50">
-              <p className="text-sm text-gray-500 mb-1">오늘 차단됨</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {todayFilteredCount.toLocaleString()}
-                <span className="text-sm font-medium text-gray-400 ml-1">개</span>
-              </p>
-              <p className="text-xs text-gray-500 mt-2">실시간 반영</p>
-            </div>
-            <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50">
-              <p className="text-sm text-blue-600 mb-1">주간 일평균</p>
-              <p className="text-2xl font-bold text-blue-700">
-                {dailyAverageFiltered.toLocaleString()}
-                <span className="text-sm font-medium text-blue-400 ml-1">개</span>
-              </p>
-              <p className="text-xs text-blue-600 mt-2">
-                최근 7일 총 {recentWeekFilteredCount.toLocaleString()}개
-              </p>
-            </div>
-            <div className="p-4 rounded-2xl border border-rose-100 bg-rose-50">
-              <p className="text-sm text-rose-600 mb-1">법률 검토 필요</p>
-              <p className="text-2xl font-bold text-rose-700">
-                {legalFlaggedCount.toLocaleString()}
-                <span className="text-sm font-medium text-rose-400 ml-1">건</span>
-              </p>
-              <p className="text-xs text-rose-600 mt-2">즉시 상담 권장</p>
-            </div>
-            <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50">
-              <p className="text-sm text-emerald-600 mb-1">필터링 비율</p>
-              <p className="text-2xl font-bold text-emerald-700">{filteringRate}%</p>
-              <p className="text-xs text-emerald-600 mt-2">총 댓글 대비</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. 원본 악플 접근 경고 및 목록 */}
+      {/* 2. 원본 악플 접근 경고 및 목록 */}
       {!hasAcknowledgedWarning ? (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden min-h-[640px] flex flex-col">
           <div className="bg-red-50 border-b border-red-200 p-6">
