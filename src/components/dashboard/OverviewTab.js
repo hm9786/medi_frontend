@@ -295,14 +295,22 @@ export function OverviewTab({ data, channel }) {
             </CardContent>
           </Card>
 
-          {/* 오른쪽 카드 섹션: 이번 달 필터링 현황 (왼쪽) + 빈 카드 (오른쪽) */}
+          {/* 오른쪽 카드 섹션: 해당 채널에서 필터링 현황 (왼쪽) + 빈 카드 (오른쪽) */}
           <Card>
             <CardContent className="pt-5 pb-5 h-full flex flex-col justify-between">
               <div>
-                <p className="text-sm text-gray-500 mt-3">이번 달 필터링된 댓글</p>
-                <p className="text-3xl font-bold text-gray-900 mt-12">{thisMonthFiltered.toLocaleString()}건</p>
-                
+                <p className="text-sm text-gray-500 mt-3">해당 채널에서 필터링 된 댓글</p>
+                <p className="text-3xl font-bold text-red-600 mt-12">{totalFiltered.toLocaleString()}건</p>
               </div>
+              <button 
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-full transition-colors mt-6"
+                onClick={() => {
+                  // TODO: 필터링 된 댓글 삭제 기능 구현
+                  console.log('필터링 된 댓글 삭제하기 클릭');
+                }}
+              >
+                필터링 된 댓글 삭제하기
+              </button>
             </CardContent>
           </Card>
           
