@@ -172,6 +172,37 @@ export function OverviewTab({ data, channel }) {
     setVideoPage(0);
   }, [searchQuery]);
 
+  // 영상 선택 시 페이지 상단으로 스크롤
+  useEffect(() => {
+    if (selectedVideo) {
+      const scrollToTop = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (document.scrollingElement) {
+          document.scrollingElement.scrollTop = 0;
+        }
+      };
+      
+      // 즉시 실행
+      scrollToTop();
+      
+      // 렌더링 후 스크롤
+      requestAnimationFrame(() => {
+        scrollToTop();
+      });
+      
+      // 작은 화면에서 레이아웃 렌더링 완료 후 스크롤
+      const timer = setTimeout(() => {
+        scrollToTop();
+      }, 200);
+      
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [selectedVideo]);
+
   if (selectedVideo) {
     return <VideoDetailTab video={selectedVideo} onBack={() => setSelectedVideo(null)} />;
   }
@@ -510,7 +541,11 @@ export function OverviewTab({ data, channel }) {
                 <div
                   key={video.id}
                   className="group flex flex-col rounded-3xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => setSelectedVideo(video)}
+                  onClick={() => {
+                    // 클릭 시 즉시 스크롤 처리
+                    window.scrollTo(0, 0);
+                    setSelectedVideo(video);
+                  }}
                 >
                   <div className="relative w-full pt-[56.25%] overflow-hidden rounded-3xl bg-gray-100">
                     {video.thumbnail && (

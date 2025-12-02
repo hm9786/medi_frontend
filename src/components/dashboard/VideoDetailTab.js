@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown, ThumbsUp } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
@@ -117,8 +117,56 @@ export function VideoDetailTab({ video, onBack }) {
   const [sortBy, setSortBy] = useState('date');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const sortDropdownRef = useRef(null);
+  const topRef = useRef(null); // 최상단 요소 참조
 
   const COMMENTS_PER_PAGE = 5;
+
+  // 컴포넌트 마운트 시 페이지 상단으로 스크롤
+  useEffect(() => {
+    const scrollToTop = () => {
+      // ref를 사용하여 최상단 요소로 스크롤
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'nearest' });
+      }
+      
+      // 모든 가능한 스크롤 방법 시도
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (document.scrollingElement) {
+        document.scrollingElement.scrollTop = 0;
+      }
+    };
+    
+    // 즉시 실행
+    scrollToTop();
+    
+    // 렌더링 후 스크롤
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+    
+    // 작은 화면에서 레이아웃 렌더링 완료 후 스크롤
+    const timer = setTimeout(() => {
+      scrollToTop();
+    }, 200);
+    
+    // 작은 화면에서 레이아웃 변경 감지 후 스크롤
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined' && topRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        scrollToTop();
+      });
+      resizeObserver.observe(document.body);
+    }
+    
+    return () => {
+      clearTimeout(timer);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [video?.id]);
 
   useEffect(() => {
     setVisibleOriginalComments(new Set());
@@ -296,11 +344,18 @@ export function VideoDetailTab({ video, onBack }) {
 
   const handlePrevComments = () => {
     setCurrentOriginalPage((prev) => Math.max(0, prev - 1));
+    // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
   };
 
   const handleNextComments = () => {
     if (totalOriginalPages === 0) return;
     setCurrentOriginalPage((prev) => Math.min(totalOriginalPages - 1, prev + 1));
+    // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
+  };
+
+  const handleDeleteComment = (commentId) => {
+    // TODO: 백엔드 연동 시 실제 삭제 API 호출로 교체
+    console.warn('삭제 버튼 클릭됨 (UI 전용):', commentId);
   };
 
   const handleToggleVisibility = (commentId) => {
@@ -364,6 +419,9 @@ export function VideoDetailTab({ video, onBack }) {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500 font-sans">
+      {/* 스크롤 위치 초기화를 위한 최상단 참조 요소 */}
+      <div ref={topRef} className="absolute top-0 left-0 w-0 h-0" aria-hidden="true" />
+      
       {/* 상단 네비게이션 */}
       <Button
         variant="ghost"
@@ -540,7 +598,7 @@ export function VideoDetailTab({ video, onBack }) {
       </Card>
       {/* 2. 원본 악플 접근 경고 및 목록 */}
       {!hasAcknowledgedWarning ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden min-h-[640px] flex flex-col">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden flex flex-col">
           <div className="bg-red-50 border-b border-red-200 p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-white rounded-full flex items-center justify-center border-2 border-red-300">
@@ -549,12 +607,12 @@ export function VideoDetailTab({ video, onBack }) {
               <div>
                 <h3 className="text-2xl font-bold text-red-800 mb-2">주의: 원본 악성 댓글 열람 전 안내</h3>
                 <p className="text-red-600 text-sm">
-                  이 영상에서 차단된 {effectiveOriginalComments.length.toLocaleString()}개의 악성 댓글이 있습니다.
+                  이 영상에서 차단된 {effectiveOriginalComments.length.toLocaleString()}개의 악성 댓글이 있습니다
                 </p>
               </div>
             </div>
           </div>
-          <div className="p-6 space-y-6 flex-1 flex flex-col justify-center">
+          <div className="p-6 pb-2 flex-1 flex flex-col">
             <div className="bg-red-50 rounded-xl p-6 border border-red-200">
               <div className="flex items-start gap-3 mb-4">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -563,21 +621,17 @@ export function VideoDetailTab({ video, onBack }) {
               <ul className="space-y-2 text-sm text-red-700 pl-1">
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
-                  <span>악성 댓글은 이미 차단되어 시청자에게 보이지 않습니다.</span>
+                  <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
-                  <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500">•</span>
-                  <span>법적 대응이 필요하면 즉시 전문가와 상담하세요.</span>
+                  <span>법적 대응이 필요하면 법률 상담 챗봇을 이용하세요</span>
                 </li>
               </ul>
             </div>
             <button
               onClick={handleWarningConfirm}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-base font-semibold"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-base font-semibold mt-auto"
             >
               <ShieldAlert className="w-5 h-5" />
               원본 내용 확인하러 가기
@@ -681,12 +735,16 @@ export function VideoDetailTab({ video, onBack }) {
 
                         <div className="flex items-center justify-between gap-4 w-full lg:w-auto">
                           <div className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                            <span role="img" aria-label="likes">
-                              ❤️
-                            </span>
+                            <ThumbsUp className="w-4 h-4" />
                             <span>{Number(comment.likes || 0)}</span>
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                            >
+                              삭제
+                            </button>
                             <button
                               onClick={() => handleToggleVisibility(comment.id)}
                               className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium ${
