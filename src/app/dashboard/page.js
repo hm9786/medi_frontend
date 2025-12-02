@@ -339,7 +339,12 @@ function ChannelDetailView({ channelId, activeTab }) {
         } else if (activeTab === 'consulting') {
           setConsultingData({});
         } else if (activeTab === 'badcomments') {
-          setBadCommentsData({});
+          // BadCommentsTab 에서 사용할 채널 정보 전달
+          setBadCommentsData({
+            channelDbId: channelId,
+            youtubeChannelId: channel?.youtubeChannelId,
+            channelName: channel?.title || channel?.name || channel?.channelName || "",
+          });
         } else if (activeTab === 'legal') {
           // 📌 [중요] 여기서 channelId를 반드시 포함시켜야 챗봇이 채널 정보를 알 수 있습니다.
           setLegalData({ channelId: channelId });

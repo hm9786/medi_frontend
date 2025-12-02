@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { Button } from "@/components/ui/button";
+import { apiUrl } from "@/lib/config";
 
 /**
  * 기존 "원본 악플 보기" 탭의 콘텐츠를 전부 제거하고
@@ -32,45 +33,8 @@ function HighlightText({ children }) {
   );
 }
 
-export function BadCommentsTab() {
-  const [openThreatReport, setOpenThreatReport] = useState(false);
-  const [openDefenseReport, setOpenDefenseReport] = useState(false);
-  const [expandedVideos, setExpandedVideos] = useState({});
-
-  // 보고서 생성 로딩 모달 상태
-  const [openReportLoading, setOpenReportLoading] = useState(false);
-  // idle | in_progress | done
-  const [threatStatus, setThreatStatus] = useState("idle");
-  const [defenseStatus, setDefenseStatus] = useState("idle");
-
-  // 보고서 생성 플로우 시작 시 호출 (추후 실제 API 트리거와 연결)
-  const startReportGenerationFlow = () => {
-    setOpenReportLoading(true);
-    setThreatStatus("in_progress");
-    setDefenseStatus("idle");
-  };
-
-  // 모달이 열려 있을 때 20초 후 상태 전환: 위협 보고서 완료 → 방어 전략 생성 중
-  useEffect(() => {
-    if (!openReportLoading) return;
-
-    const timer = setTimeout(() => {
-      setThreatStatus((prev) => (prev === "in_progress" ? "done" : prev));
-      setDefenseStatus((prev) => (prev === "idle" ? "in_progress" : prev));
-    }, 20000);
-
-    return () => clearTimeout(timer);
-  }, [openReportLoading]);
-
-  // 실제 백엔드 응답을 모두 받은 시점에 이 함수를 호출하면
-  // 두 줄 모두 "생성 완료" 상태로 바뀝니다.
-  const markReportsGenerationDone = () => {
-    setThreatStatus("done");
-    setDefenseStatus("done");
-  };
-
-  // 하드코딩된 데이터 (제공된 JSON 구조 참조)
-  const reportData = {
+// 초기 예시 데이터 (백엔드 연동 후 응답으로 대체됨)
+const initialReportData = {
     channel_name: "서빈감각",
     generated_at: "2025-11-28T17:35:22.773177",
     total_comments: 34,
@@ -231,6 +195,153 @@ export function BadCommentsTab() {
     }
   };
 
+export function BadCommentsTab({ data }) {
+  const [openThreatReport, setOpenThreatReport] = useState(false);
+  const [openDefenseReport, setOpenDefenseReport] = useState(false);
+  const [expandedVideos, setExpandedVideos] = useState({});
+
+  // 선택된 채널 정보 (페이지에서 내려주는 데이터)
+  const channelDbId = data?.channelDbId || data?.channelId;
+  const youtubeChannelId = data?.youtubeChannelId;
+  const channelNameFromProps = data?.channelName || "";
+
+  // 보고서 데이터 (초기에는 null - 데이터 수신 후에만 설정)
+  const [reportData, setReportData] = useState(null);
+
+  // 보고서 생성 로딩 모달 상태
+  const [openReportLoading, setOpenReportLoading] = useState(false);
+  // idle | in_progress | done
+  const [threatStatus, setThreatStatus] = useState("idle");
+  const [defenseStatus, setDefenseStatus] = useState("idle");
+
+  // 보고서 생성 + 로딩 플로우 시작
+  const startReportGenerationFlow = async () => {
+    if (!channelDbId || !youtubeChannelId) {
+      console.warn("채널 ID가 없어 보고서를 생성할 수 없습니다.");
+      return;
+    }
+
+    setOpenReportLoading(true);
+    setThreatStatus("in_progress");
+    setDefenseStatus("idle");
+
+    try {
+      // 1) 리포트 생성 요청 (큐에 작업 추가)
+      await fetch(apiUrl("/api/reports"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelId: youtubeChannelId,
+          data: {},
+        }),
+      });
+
+      // 2) 메타데이터 + 위협 인텔리전스 조회 (병렬)
+      const [metaRes, threatRes] = await Promise.all([
+        fetch(apiUrl(`/api/youtube/analysis/channel/${channelDbId}/metadata`), {
+          method: "GET",
+          credentials: "include",
+        }),
+        fetch(apiUrl(`/api/youtube/analysis/channel/${channelDbId}/threat-intelligence`), {
+          method: "GET",
+          credentials: "include",
+        }),
+      ]);
+
+      if (!metaRes.ok || !threatRes.ok) {
+        throw new Error("메타데이터/위협 인텔리전스 조회 실패");
+      }
+
+      const meta = await metaRes.json();
+      const threat = await threatRes.json();
+
+      // 3) 방어 전략 조회
+      const defenseRes = await fetch(
+        apiUrl(`/api/youtube/analysis/channel/${channelDbId}/defense-strategy`),
+        { method: "GET", credentials: "include" }
+      );
+
+      if (!defenseRes.ok) {
+        throw new Error("방어 전략 조회 실패");
+      }
+
+      const defense = await defenseRes.json();
+      const defenseSection = defense.section_2_defense_strategy || defense;
+
+      // 4) 응답을 기존 구조에 맞게 매핑
+      setReportData({
+        channel_name: meta.channelName,
+        generated_at: meta.generatedAt,
+        total_comments: meta.totalComments,
+        section_1_threat_intelligence: {
+          repeat_offenders: threat.repeat_offenders || {},
+          intensity_distribution: threat.intensity_distribution || {
+            critical: 0,
+            high: 0,
+            total: 0,
+          },
+          time_patterns: threat.time_patterns || {
+            distribution: {},
+            red_zone: { time_slot: "", count: 0, percentage: 0 },
+          },
+        },
+        top3_attacked_videos: defenseSection.top3_attacked_videos || [],
+        preventive_guidelines: defenseSection.preventive_guidelines || {
+          do_guidelines: [],
+          dont_guidelines: [],
+        },
+      });
+
+      // 모든 데이터 수신 완료 → 콘텐츠 방어 전략 보고서 "생성 완료"
+      setDefenseStatus("done");
+
+      // "생성 완료" 메시지를 사용자가 볼 수 있도록 약간의 딜레이 후 모달 닫기
+      setTimeout(() => {
+        setOpenReportLoading(false);
+      }, 1500);
+    } catch (error) {
+      console.error("보고서 생성/조회 실패:", error);
+      setThreatStatus("idle");
+      setDefenseStatus("idle");
+      setOpenReportLoading(false);
+    }
+  };
+
+  // 로딩 모달이 열린 뒤 20초가 지나면
+  // 1) 위협 악플 보고서를 "생성 완료"로 표시
+  // 2) 콘텐츠 방어 전략 보고서를 "생성 중"으로 전환
+  useEffect(() => {
+    if (!openReportLoading) return;
+
+    const timer = setTimeout(() => {
+      setThreatStatus((prev) => (prev === "in_progress" ? "done" : prev));
+      setDefenseStatus((prev) => (prev === "idle" ? "in_progress" : prev));
+    }, 20000);
+
+    return () => clearTimeout(timer);
+  }, [openReportLoading]);
+
+  // reportData가 없을 때는 빈 화면 표시
+  if (!reportData) {
+    return (
+      <div className="w-full flex justify-center items-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+            메디 보고서
+          </h1>
+          <Button
+            type="button"
+            className="text-base md:text-lg px-8 py-6"
+            onClick={startReportGenerationFlow}
+          >
+            보고서 생성하기
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const section1 = reportData.section_1_threat_intelligence;
 
   // 시간대 데이터 변환 (Object -> Array for Chart)
@@ -253,25 +364,26 @@ export function BadCommentsTab() {
       <div className="w-full max-w-6xl px-6 md:px-8 lg:px-10 py-8 space-y-8">
         {/* 상단 타이틀 + 채널 정보 */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
-            메디 보고서
-          </h1>
-          <p className="mt-1 text-sm md:text-base text-slate-500">
-            채널{" "}
-            <span className="font-semibold text-slate-900">서빈감각</span>
-            의 악플 보고서와 콘텐츠 방어 전략 보고서입니다
-          </p>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+              메디 보고서
+            </h1>
+            <p className="mt-1 text-sm md:text-base text-slate-500">
+              채널{" "}
+              <span className="font-semibold text-slate-900">
+                {reportData.channel_name || channelNameFromProps}
+              </span>
+              의 악플 보고서와 콘텐츠 방어 전략 보고서입니다
+            </p>
           </div>
 
-          {/* 로딩 모달 테스트용 버튼 (추후 실제 보고서 생성 버튼과 연결 가능) */}
+          {/* 보고서 생성하기 버튼 */}
           <Button
             type="button"
-            variant="outline"
-            className="self-start text-xs md:text-sm"
+            className="self-start text-xs md:text-sm px-4 py-2"
             onClick={startReportGenerationFlow}
           >
-            보고서 생성 로딩 테스트
+            보고서 생성하기
           </Button>
         </div>
 
@@ -287,7 +399,8 @@ export function BadCommentsTab() {
                 <div>
                   <p className="text-xs text-slate-500">전체 필터링</p>
                   <p className="text-xl md:text-2xl font-extrabold text-slate-900 leading-tight">
-                    25<span className="text-sm font-semibold ml-0.5">건</span>
+                    {reportData.total_comments}
+                    <span className="text-sm font-semibold ml-0.5">건</span>
                   </p>
                 </div>
               </div>
@@ -304,7 +417,8 @@ export function BadCommentsTab() {
                 <div>
                   <p className="text-xs text-slate-500">위험</p>
                   <p className="text-xl md:text-2xl font-extrabold text-rose-500 leading-tight">
-                    7<span className="text-sm font-semibold ml-0.5">건</span>
+                    {section1.intensity_distribution.critical}
+                    <span className="text-sm font-semibold ml-0.5">건</span>
                   </p>
                 </div>
               </div>
@@ -321,7 +435,8 @@ export function BadCommentsTab() {
                 <div>
                   <p className="text-xs text-slate-500">주의</p>
                   <p className="text-xl md:text-2xl font-extrabold text-amber-500 leading-tight">
-                    18<span className="text-sm font-semibold ml-0.5">건</span>
+                    {section1.intensity_distribution.high}
+                    <span className="text-sm font-semibold ml-0.5">건</span>
                   </p>
                 </div>
               </div>
@@ -427,18 +542,25 @@ export function BadCommentsTab() {
             className="max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-gray-50/50"
             onClose={() => setOpenThreatReport(false)}
           >
-            {/* 헤더 */}
-            <div className="p-6 bg-white border-b shrink-0">
+            {/* 헤더 - 위협 카드(레드 톤) 색감과 맞춤 (호버 외곽선보다 한 톤 밝은 레드 계열) */}
+            <div className="p-6 bg-rose-100 border-b border-rose-300 text-rose-900 shrink-0">
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-1 mb-1">
-                 
-                      <span className="text-gray-400 text-sm">| {new Date(reportData.generated_at).toLocaleDateString()} 생성</span>
+                      <span className="text-rose-500 text-sm font-medium">
+                        | {new Date(reportData.generated_at).toLocaleDateString()} 생성
+                      </span>
                     </div>
-                    <DialogTitle className="text-2xl font-bold text-gray-900">위협 악플 보고서</DialogTitle>
-                    <DialogDescription className="mt-1">
-                      메디 에이전트가 총 <span className="font-bold text-gray-900">{reportData.total_comments}건</span>의 위협 악플 데이터를 분석했습니다.
+                    <DialogTitle className="text-2xl font-bold text-rose-950">
+                      위협 악플 보고서
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-rose-800">
+                      메디 에이전트가 총{" "}
+                      <span className="font-bold text-rose-900">
+                        {reportData.total_comments}건
+                      </span>
+                      의 위협 악플 데이터를 분석했습니다.
                     </DialogDescription>
                   </div>
                 </div>
@@ -612,17 +734,21 @@ export function BadCommentsTab() {
             className="max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-gray-50/50"
             onClose={() => setOpenDefenseReport(false)}
           >
-            {/* 헤더: 다크 모드 느낌의 강한 대비 */}
-            <div className="p-6 bg-slate-900 border-b border-slate-800 text-white shrink-0">
-            <DialogHeader>
+            {/* 헤더 - 방어 카드(블루/인디고 톤) 색감과 맞춤 (호버 외곽선보다 한 톤 밝은 인디고 계열) */}
+            <div className="p-6 bg-indigo-100 border-b border-indigo-300 text-slate-900 shrink-0">
+              <DialogHeader>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-slate-400 text-sm font-medium">{new Date(reportData.generated_at).toLocaleDateString()} 분석</span>
+                  <span className="text-indigo-600 text-sm font-medium">
+                    {new Date(reportData.generated_at).toLocaleDateString()} 분석
+                  </span>
                 </div>
-                <DialogTitle className="text-2xl font-bold tracking-tight text-white">콘텐츠 방어 전략 보고서</DialogTitle>
-                <DialogDescription className="mt-1 text-slate-300">
+                <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">
+                  콘텐츠 방어 전략 보고서
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-slate-700">
                   악플 데이터 기반의 맞춤형 채널 방어 전략 및 가이드라인입니다.
                 </DialogDescription>
-            </DialogHeader>
+              </DialogHeader>
             </div>
 
             <ScrollArea className="flex-1 min-h-0 bg-white">

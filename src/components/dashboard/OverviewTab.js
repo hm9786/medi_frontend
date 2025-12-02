@@ -284,8 +284,8 @@ export function OverviewTab({ data, channel }) {
           <Card>
             <CardContent className="pt-5 pb-5 h-full flex flex-col justify-between">
               <div>
-                <p className="text-sm text-gray-500">이번 달 필터링된 댓글</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{thisMonthFiltered.toLocaleString()}건</p>
+                <p className="text-sm text-gray-500 mt-3">이번 달 필터링된 댓글</p>
+                <p className="text-3xl font-bold text-gray-900 mt-12">{thisMonthFiltered.toLocaleString()}건</p>
                 
               </div>
             </CardContent>
@@ -309,7 +309,7 @@ export function OverviewTab({ data, channel }) {
                   return (
                     <div className="flex flex-col items-center justify-center gap-4">
                       <Cloud className="size-16 text-gray-300" />
-                      <p className="text-sm text-gray-500 text-center">
+                      <p className="text-sm text-gray-500 mt-12">
                         채널 날씨 데이터를 표시할 수 없습니다
                       </p>
                     </div>
