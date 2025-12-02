@@ -413,7 +413,7 @@ export function VideoDetailTab({ video, onBack }) {
                 {/* 필터링된 댓글 */}
                 <div className="p-4 rounded-xl border border-blue-100 flex flex-col justify-center" style={{ backgroundColor: '#F0F7FF' }}>
                   <div className="flex items-center gap-2 text-blue-600 mb-1 text-sm font-medium">
-                    <Shield className="size-4" /> 필터링된 댓글
+                    <Shield className="size-4" /> 필터링 된 댓글
                   </div>
                   <div className="text-blue-700 text-2xl font-bold">
                     {Number(filteredComments).toLocaleString()}<span className="text-base font-normal text-blue-400 ml-1">개</span>
@@ -468,7 +468,7 @@ export function VideoDetailTab({ video, onBack }) {
                 <SelectContent>
                   <SelectItem value="day">일별 (7일)</SelectItem>
                   <SelectItem value="month">월별 (30일)</SelectItem>
-                  <SelectItem value="year">연별 (1년)</SelectItem>
+                  <SelectItem value="year">연도별 (1년)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
