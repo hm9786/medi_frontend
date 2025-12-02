@@ -239,9 +239,9 @@ export function BadCommentsTab({ data }) {
       });
       console.log("✅ 보고서 생성 요청 완료 (에이전트 처리 대기 중)");
 
-      // 2) 폴링: 5초마다 메타데이터 조회 시도 (최대 3분 = 36회)
+      // 2) 폴링: 5초마다 메타데이터 조회 시도 (최대 10분 = 120회)
       let pollCount = 0;
-      const maxPolls = 36; // 3분 (5초 * 36)
+      const maxPolls = 120; // 10분 (5초 * 120)
       const pollInterval = 5000; // 5초
 
       const pollForReport = async () => {
@@ -325,7 +325,7 @@ export function BadCommentsTab({ data }) {
               } else if (pollCount >= maxPolls) {
                 // 최대 시도 횟수 초과
                 clearInterval(interval);
-                reject(new Error("보고서 생성 시간 초과 (3분)"));
+                reject(new Error("보고서 생성 시간 초과 (10분)"));
               }
               // 아직 데이터 없음 - 계속 폴링
             } catch (error) {
