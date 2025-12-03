@@ -52,41 +52,40 @@ export default function Home() {
         <Navigation variant="landing" />
 
         {/* 2. 히어로 섹션 */}
-        <section className="flex flex-col items-center text-center min-h-screen pt-12 sm:pt-20 pb-20 sm:pb-40 transition-colors duration-300 overflow-hidden">
-          <div className="max-w-[1600px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-20">
+        <section className="flex flex-col items-center text-center min-h-screen pt-8 sm:pt-16 md:pt-20 pb-16 sm:pb-32 md:pb-40 transition-colors duration-300 overflow-hidden">
+          <div className="max-w-[1600px] w-full px-4 sm:px-6 lg:px-8 mx-auto flex flex-col lg:flex-row items-center gap-6 sm:gap-10 lg:gap-20">
             
             {/* [왼쪽 방] 텍스트 영역 */}
-            <div className="flex-1 w-full text-center lg:text-left md:-mt-20 lg:-mt-30 z-10">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[3.8rem] font-extrabold tracking-tight mb-4 sm:mb-6 leading-tight">
-                <span className="block text-slate-900 transition-colors mb-3 sm:mb-10">
+            <div className="flex-1 w-full text-center lg:text-left md:-mt-8 lg:-mt-16 z-10">
+              <h1 className="font-extrabold tracking-tight mb-3 sm:mb-4 md:mb-6">
+                <span className="block text-slate-900 transition-colors text-[1.4rem] sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-snug whitespace-nowrap mb-2 sm:mb-4 md:mb-6 lg:mb-8">
                   유튜브 크리에이터를 위한
                 </span>
-                <span className="block text-blue-600 transition-colors text-4xl sm:text-[4.2rem]">
-                  댓글 관리 AI 에이전트
+                <span className="block text-blue-600 transition-colors text-[1.5rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-snug whitespace-nowrap font-black">
+                  댓글 관리 AI Agent
                 </span>
-               
               </h1>
               
-              <p className="text-base sm:text-lg text-slate-600 mt-8 sm:mt-10 mb-6 sm:mb-8 max-w-2xl mx-auto lg:mx-0 transition-colors px-2">
+              <p className="text-sm sm:text-base md:text-lg text-slate-600 mt-5 sm:mt-8 md:mt-10 mb-5 sm:mb-6 md:mb-8 max-w-2xl mx-auto lg:mx-0 transition-colors px-2 leading-relaxed">
                 메디는 AI 기반의 스마트 댓글 관리 AI에이전트 서비스로 
                 <br className="hidden sm:block" />
                 크리에이터의 정신적 육체적 부담을 덜어주고 컨텐츠의 질을 향상시킵니다
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start px-2">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start px-2 mt-6 sm:mt-8">
                 <Link href="/signup/step0" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto gap-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+                  <Button size="lg" className="w-full sm:w-auto gap-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors text-sm sm:text-base">
                     지금 시작하기 <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-200 transition-colors">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-200 transition-colors text-sm sm:text-base">
                   데모 영상 보기
                 </Button>
               </div>
             </div>
           
             {/* [오른쪽 방] 이미지 영역 */}
-            <div className="flex-1 w-full flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 lg:gap-12 mt-6 sm:mt-10 lg:mt-0">
+            <div className="flex-1 w-full flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-12 mt-8 sm:mt-10 lg:mt-0">
               
               {/* 휴대폰 1 */}
               <div 
@@ -97,7 +96,7 @@ export default function Home() {
                 <img 
                   src="/YouTubeChannelMockup.png"
                   alt="채널 화면" 
-                  className="w-full max-w-[240px] sm:max-w-[280px] lg:max-w-[300px] h-auto drop-shadow-2xl"
+                  className="w-full max-w-[180px] xs:max-w-[200px] sm:max-w-[240px] md:max-w-[260px] lg:max-w-[300px] h-auto drop-shadow-2xl"
                 />
               </div>
               
@@ -110,7 +109,7 @@ export default function Home() {
                 <img 
                   src="/YouTubeCommentMockup.png"
                   alt="댓글 화면" 
-                  className="w-full max-w-[240px] sm:max-w-[280px] lg:max-w-[300px] h-auto drop-shadow-2xl"
+                  className="w-full max-w-[180px] xs:max-w-[200px] sm:max-w-[240px] md:max-w-[260px] lg:max-w-[300px] h-auto drop-shadow-2xl"
                 />
               </div>
 
@@ -119,9 +118,9 @@ export default function Home() {
         </section>
 
         {/* 3. 기능 소개 섹션 */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-slate-900 transition-colors">주요 기능</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <section className="py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-6 sm:mb-10 md:mb-12 text-slate-900 transition-colors">주요 기능</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             
             {[
               { title: "AI 자동 필터링", desc: "악플, 스팸을 자동으로 감지합니다.", detail: "문맥을 파악하는 AI가 설정한 강도에 맞춰 유해 댓글을 실시간으로 숨김 처리합니다." },

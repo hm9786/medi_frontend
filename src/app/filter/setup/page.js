@@ -535,7 +535,7 @@ export default function FilterSetupPage() {
             {/* 제목 (카드 내부로 이동) */}
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-black mb-3 tracking-tight">
-                AI에게 차단 기준을 설명해주세요
+                메디에게 차단 기준을 설명해주세요
               </h1>
               <p className="text-base text-gray-600">
                 키워드나 문장으로 자유롭게 입력해주세요 (선택사항)
@@ -564,7 +564,7 @@ export default function FilterSetupPage() {
                 id="filtering-description"
                 value={userFilteringDescription}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder="예시: 저를 비난하는 건 괜찮지만, 가족을 욕하는 댓글은 무조건 막아주세요. 광고나 스팸 댓글도 필터링해주세요."
+                placeholder="예시: 저를 비난하는 건 괜찮지만, 가족을 욕하는 댓글은 무조건 막아주세요. 욕설, 비판"
                     
                 className="w-full min-h-[200px] px-4 py-3 text-base rounded-lg border border-gray-300 bg-white resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
                 rows={8}
@@ -657,7 +657,7 @@ export default function FilterSetupPage() {
             예시 댓글을 확인하고 분류해주세요
           </h1>
           <p className="text-base text-gray-600">
-            AI가 학습할 수 있도록 댓글을 분류해주세요
+            메디가 학습할 수 있도록 댓글을 분류해주세요
           </p>
         </div>
 
@@ -921,7 +921,7 @@ export default function FilterSetupPage() {
             </div>
             
             <p className="text-sm text-gray-600 mb-6">
-              필터링된 댓글이 일정 개수 이상일 때 리포트를 발송합니다.
+              필터링 된 댓글이 일정 개수 이상일 때 리포트를 발송합니다 (선택사항)
             </p>
 
             {emailNotificationEnabled && (
@@ -1018,7 +1018,7 @@ export default function FilterSetupPage() {
 
               {/* 등록된 차단 키워드/설명 */}
               <div className="py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-700 block mb-2">등록된 차단 키워드</span>
+                <span className="text-sm font-medium text-gray-700 block mb-2">등록된 필터링 문장 또는 키워드</span>
                 <div>
                   {userFilteringDescription.trim() ? (
                     <p className="text-sm text-gray-900">{userFilteringDescription}</p>
@@ -1032,7 +1032,7 @@ export default function FilterSetupPage() {
 
               {/* 예시 라벨링 결과 */}
               <div className="py-3 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-700 block mb-2">예시 라벨링 결과</span>
+                <span className="text-sm font-medium text-gray-700 block mb-2">예시 댓글 확인 결과</span>
                 <div className="flex gap-2">
                   <span className="text-sm text-gray-900">
                     숨기기: <span className="font-semibold">{dislikeExamples.length}개</span>

@@ -6,70 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown, ThumbsUp } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { apiUrl } from '@/lib/config';
-
-const MOCK_ORIGINAL_COMMENTS = [
-  {
-    id: 'mock-1',
-    author: '악성유저123',
-    content: '이런 저런 욕설과 비방이 담긴 댓글입니다...ㄹㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷㄷ',
-    likes: 3,
-    publishedAt: '2025-11-20T09:00:00Z',
-  },
-  {
-    id: 'mock-2',
-    author: '트롤러456',
-    content: '부적절한 내용과 혐오 발언이 포함된 댓글...',
-    likes: 1,
-    publishedAt: '2025-11-21T09:00:00Z',
-  },
-  {
-    id: 'mock-3',
-    author: '스팸계정789',
-    content: '광고성 스팸 댓글 내용이 여기에 표시됩니다...',
-    likes: 0,
-    publishedAt: '2025-11-22T09:00:00Z',
-  },
-  {
-    id: 'mock-4',
-    author: '악플러000',
-    content: '악의적인 비난과 인신공격성 댓글입니다...',
-    likes: 5,
-    publishedAt: '2025-11-23T09:00:00Z',
-  },
-  {
-    id: 'mock-5',
-    author: '문제유저111',
-    content: '허위사실 유포 및 명예훼손 내용 댓글...',
-    likes: 2,
-    publishedAt: '2025-11-24T09:00:00Z',
-  },
-  {
-    id: 'mock-6',
-    author: '나쁜사람222',
-    content: '차별적 발언과 혐오 표현이 담긴 댓글...',
-    likes: 4,
-    publishedAt: '2025-11-25T09:00:00Z',
-  },
-  {
-    id: 'mock-7',
-    author: '악성333',
-    content: '위협적이고 공격적인 내용의 댓글입니다...',
-    likes: 1,
-    publishedAt: '2025-11-26T09:00:00Z',
-  },
-  {
-    id: 'mock-8',
-    author: '트롤444',
-    content: '선정적이고 부적절한 내용이 포함된 댓글...',
-    likes: 0,
-    publishedAt: '2025-11-27T09:00:00Z',
-  },
-];
 
 const getStressBadgeInfo = (averageCount) => {
   if (averageCount >= 40) {
@@ -117,8 +58,56 @@ export function VideoDetailTab({ video, onBack }) {
   const [sortBy, setSortBy] = useState('date');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const sortDropdownRef = useRef(null);
+  const topRef = useRef(null); // 최상단 요소 참조
 
   const COMMENTS_PER_PAGE = 5;
+
+  // 컴포넌트 마운트 시 페이지 상단으로 스크롤
+  useEffect(() => {
+    const scrollToTop = () => {
+      // ref를 사용하여 최상단 요소로 스크롤
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'nearest' });
+      }
+      
+      // 모든 가능한 스크롤 방법 시도
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (document.scrollingElement) {
+        document.scrollingElement.scrollTop = 0;
+      }
+    };
+    
+    // 즉시 실행
+    scrollToTop();
+    
+    // 렌더링 후 스크롤
+    requestAnimationFrame(() => {
+      scrollToTop();
+    });
+    
+    // 작은 화면에서 레이아웃 렌더링 완료 후 스크롤
+    const timer = setTimeout(() => {
+      scrollToTop();
+    }, 200);
+    
+    // 작은 화면에서 레이아웃 변경 감지 후 스크롤
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined' && topRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        scrollToTop();
+      });
+      resizeObserver.observe(document.body);
+    }
+    
+    return () => {
+      clearTimeout(timer);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [video?.id]);
 
   useEffect(() => {
     setVisibleOriginalComments(new Set());
@@ -176,18 +165,26 @@ export function VideoDetailTab({ video, onBack }) {
 
       const to = endDate.toISOString().split('T')[0];
       const from = startDate.toISOString().split('T')[0];
+      const periodType =
+        filterPeriod === 'day' ? 'daily' : filterPeriod === 'month' ? 'monthly' : 'yearly';
 
       try {
-        // 📌 videoId를 파라미터로 전달하여 해당 영상의 추이만 조회
+        // 📌 작성 시간(published_at) 기준 통계 API 호출 (특정 영상)
         const response = await fetch(
-          apiUrl(`api/user/dashboard/filtering-trend?from=${from}&to=${to}&videoId=${video.id}`),
+          apiUrl(
+            `api/v1/analysis/comments/stats?videoId=${video.id}` +
+              `&period=${periodType}&startDate=${from}&endDate=${to}`
+          ),
           { method: 'GET', credentials: 'include' }
         );
 
         if (response.ok) {
           const trendJson = await response.json();
-          const formattedTrend = trendJson.map(t => ({
-            date: t.date.substring(5).replace('-', '/'), // MM/DD 형식
+          const statsArray = Array.isArray(trendJson?.stats) ? trendJson.stats : [];
+
+          const formattedTrend = statsArray.map((t) => ({
+            // "YYYY-MM-DD" → "MM/DD" 형태로 축 약식 표기
+            date: (t.date || '').substring(5).replace('-', '/') || t.date,
             filtered: t.filteredCount ?? 0,
             total: t.totalCount ?? 0,
           }));
@@ -219,8 +216,7 @@ export function VideoDetailTab({ video, onBack }) {
 
   // 페이지 수가 줄었을 때 현재 페이지를 안전하게 조정
   useEffect(() => {
-    const sourceLength = originalComments.length > 0 ? originalComments.length : MOCK_ORIGINAL_COMMENTS.length;
-    const totalPages = Math.ceil(sourceLength / COMMENTS_PER_PAGE);
+    const totalPages = Math.ceil(originalComments.length / COMMENTS_PER_PAGE);
     if (totalPages > 0 && currentOriginalPage > totalPages - 1) {
       setCurrentOriginalPage(totalPages - 1);
     }
@@ -271,9 +267,8 @@ export function VideoDetailTab({ video, onBack }) {
     setHasAcknowledgedWarning(true);
   };
 
-  const isUsingMockComments = originalComments.length === 0;
-  const effectiveOriginalComments = isUsingMockComments ? MOCK_ORIGINAL_COMMENTS : originalComments;
-  const sortedOriginalComments = [...effectiveOriginalComments].sort((a, b) => {
+  // 📌 백엔드 DB의 실제 원본 악플 데이터만 사용 (MOCK 데이터 제거)
+  const sortedOriginalComments = [...originalComments].sort((a, b) => {
     if (sortBy === 'likes') {
       return (b.likes || 0) - (a.likes || 0);
     }
@@ -296,11 +291,18 @@ export function VideoDetailTab({ video, onBack }) {
 
   const handlePrevComments = () => {
     setCurrentOriginalPage((prev) => Math.max(0, prev - 1));
+    // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
   };
 
   const handleNextComments = () => {
     if (totalOriginalPages === 0) return;
     setCurrentOriginalPage((prev) => Math.min(totalOriginalPages - 1, prev + 1));
+    // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
+  };
+
+  const handleDeleteComment = (commentId) => {
+    // TODO: 백엔드 연동 시 실제 삭제 API 호출로 교체
+    console.warn('삭제 버튼 클릭됨 (UI 전용):', commentId);
   };
 
   const handleToggleVisibility = (commentId) => {
@@ -364,70 +366,89 @@ export function VideoDetailTab({ video, onBack }) {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500 font-sans">
+      {/* 스크롤 위치 초기화를 위한 최상단 참조 요소 */}
+      <div ref={topRef} className="absolute top-0 left-0 w-0 h-0" aria-hidden="true" />
+      
       {/* 상단 네비게이션 */}
       <Button
         variant="ghost"
         onClick={onBack}
-        className="mb-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 pl-0"
+        className="mb-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 pl-0 py-4 px-5 text-xl font-bold"
       >
-        <ArrowLeft className="size-4 mr-2" />
+        <ArrowLeft className="size-7 mr-3" />
         채널 대시보드로 돌아가기
       </Button>
 
-      {/* 1. 영상 정보 및 요약 통계 */}
+      {/* 1. 영상 정보 + 상단 카드 섹션 */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* 썸네일 */}
-            <div className="relative shrink-0">
-              <img 
-                src={displayVideo.thumbnailUrl || displayVideo.thumbnail} 
-                alt={displayVideo.title}
-                className="w-full md:w-[240px] h-[160px] rounded-lg object-cover shadow-sm"
-              />
-            </div>
-            
-            {/* 정보 및 통계 박스 */}
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-2">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-stretch">
+            {/* 좌측: 썸네일 + 제목/메타 정보 (게시글 카드 느낌) */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="relative shrink-0 w-full sm:w-auto">
+                <img 
+                  src={displayVideo.thumbnailUrl || displayVideo.thumbnail} 
+                  alt={displayVideo.title}
+                  className="w-full sm:w-[140px] sm:h-[100px] md:w-[180px] md:h-[130px] lg:w-[220px] lg:h-[160px] rounded-xl sm:rounded-2xl object-cover shadow-sm"
+                />
+              </div>
+              <div className="flex-1 flex flex-col justify-center min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mb-2 line-clamp-2 sm:truncate">
                   {displayVideo.title || '제목 없음'}
                 </h2>
-                <div className="flex items-center text-gray-500 text-sm">
-                  <Calendar className="w-4 h-4 mr-1.5" />
-                  {new Date(displayVideo.publishedAt).toLocaleDateString()} 게시
+                <div className="flex items-center text-gray-500 text-xs sm:text-sm mb-3 sm:mb-4">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                  {new Date(displayVideo.publishedAt).toLocaleDateString('ko-KR')} 게시
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                  <span>댓글 {Number(totalComments).toLocaleString()}개</span>
+                  <span className="hidden sm:inline h-3 w-px bg-gray-200" />
+                  <span>조회수 {Number(displayVideo.viewCount || 0).toLocaleString()}회</span>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* 총 댓글 */}
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1 text-sm font-medium">
-                    <MessageSquare className="size-4" /> 총 댓글
-                  </div>
-                  <div className="text-gray-900 text-2xl font-bold">
-                    {Number(totalComments).toLocaleString()}<span className="text-base font-normal text-gray-400 ml-1">개</span>
-                  </div>
-                </div>
+            </div>
 
-                {/* 필터링된 댓글 */}
-                <div className="p-4 rounded-xl border border-blue-100 flex flex-col justify-center" style={{ backgroundColor: '#F0F7FF' }}>
-                  <div className="flex items-center gap-2 text-blue-600 mb-1 text-sm font-medium">
-                    <Shield className="size-4" /> 필터링된 댓글
-                  </div>
-                  <div className="text-blue-700 text-2xl font-bold">
-                    {Number(filteredComments).toLocaleString()}<span className="text-base font-normal text-blue-400 ml-1">개</span>
-                  </div>
-                </div>
+            {/* 우측: 빈 카드 / 총 댓글 / 필터링 된 댓글 / 필터링 비율 카드 (가로 병렬) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              {/* 빈 카드 */}
+              <div className="rounded-xl sm:rounded-2xl bg-gray-50 flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+              </div>
 
-                {/* 필터링 비율 */}
-                <div className="p-4 rounded-xl bg-orange-50 border border-orange-100 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 text-orange-600 mb-1 text-sm font-medium">
-                    <AlertTriangle className="size-4" /> 필터링 비율
-                  </div>
-                  <div className="text-orange-700 text-2xl font-bold">
-                    {filteringRate}%
-                  </div>
+              {/* 총 댓글 */}
+              <div className="rounded-xl sm:rounded-2xl bg-[#F5F5F7] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-gray-600 mb-0.5 sm:mb-1 font-medium">
+                  <MessageSquare className="size-3 sm:size-4" />
+                  <span className="hidden sm:inline">총 댓글</span>
+                  <span className="sm:hidden">댓글</span>
+                </div>
+                <div className="text-sm sm:text-lg md:text-2xl font-bold text-gray-900">
+                  {Number(totalComments).toLocaleString()}
+                  <span className="ml-1 text-[10px] sm:text-xs md:text-sm font-normal text-gray-400">개</span>
+                </div>
+              </div>
+
+              {/* 필터링된 댓글 */}
+              <div className="rounded-xl sm:rounded-2xl bg-[#F4F7FF] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#3756B2] mb-0.5 sm:mb-1 font-medium">
+                  <Shield className="size-3 sm:size-4" />
+                  <span className="hidden sm:inline">필터링 된 댓글</span>
+                  <span className="sm:hidden">필터링</span>
+                </div>
+                <div className="text-sm sm:text-lg md:text-2xl font-bold text-[#1D3A8A]">
+                  {Number(filteredComments).toLocaleString()}
+                  <span className="ml-1 text-[10px] sm:text-xs md:text-sm font-normal text-[#9DB3FF]">개</span>
+                </div>
+              </div>
+
+              {/* 필터링 비율 */}
+              <div className="rounded-xl sm:rounded-2xl bg-[#FFF5EC] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#D97706] mb-0.5 sm:mb-1 font-medium">
+                  <AlertTriangle className="size-3 sm:size-4" />
+                  <span className="hidden sm:inline">필터링 비율</span>
+                  <span className="sm:hidden">비율</span>
+                </div>
+                <div className="text-sm sm:text-lg md:text-2xl font-bold text-[#B45309]">
+                  {filteringRate}%
                 </div>
               </div>
             </div>
@@ -468,7 +489,7 @@ export function VideoDetailTab({ video, onBack }) {
                 <SelectContent>
                   <SelectItem value="day">일별 (7일)</SelectItem>
                   <SelectItem value="month">월별 (30일)</SelectItem>
-                  <SelectItem value="year">연별 (1년)</SelectItem>
+                  <SelectItem value="year">연도별 (1년)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -540,7 +561,7 @@ export function VideoDetailTab({ video, onBack }) {
       </Card>
       {/* 2. 원본 악플 접근 경고 및 목록 */}
       {!hasAcknowledgedWarning ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden min-h-[640px] flex flex-col">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden flex flex-col">
           <div className="bg-red-50 border-b border-red-200 p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-white rounded-full flex items-center justify-center border-2 border-red-300">
@@ -549,12 +570,12 @@ export function VideoDetailTab({ video, onBack }) {
               <div>
                 <h3 className="text-2xl font-bold text-red-800 mb-2">주의: 원본 악성 댓글 열람 전 안내</h3>
                 <p className="text-red-600 text-sm">
-                  이 영상에서 차단된 {effectiveOriginalComments.length.toLocaleString()}개의 악성 댓글이 있습니다.
+                  이 영상에서 필터링 된 {originalComments.length.toLocaleString()}개의 악성 댓글이 있습니다
                 </p>
               </div>
             </div>
           </div>
-          <div className="p-6 space-y-6 flex-1 flex flex-col justify-center">
+          <div className="p-6 pb-2 flex-1 flex flex-col">
             <div className="bg-red-50 rounded-xl p-6 border border-red-200">
               <div className="flex items-start gap-3 mb-4">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -563,21 +584,17 @@ export function VideoDetailTab({ video, onBack }) {
               <ul className="space-y-2 text-sm text-red-700 pl-1">
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
-                  <span>악성 댓글은 이미 차단되어 시청자에게 보이지 않습니다.</span>
+                  <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
-                  <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500">•</span>
-                  <span>법적 대응이 필요하면 즉시 전문가와 상담하세요.</span>
+                  <span>법적 대응이 필요하면 법률 상담 챗봇을 이용하세요</span>
                 </li>
               </ul>
             </div>
             <button
               onClick={handleWarningConfirm}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-base font-semibold"
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-base font-semibold mt-auto"
             >
               <ShieldAlert className="w-5 h-5" />
               원본 내용 확인하러 가기
@@ -681,12 +698,16 @@ export function VideoDetailTab({ video, onBack }) {
 
                         <div className="flex items-center justify-between gap-4 w-full lg:w-auto">
                           <div className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                            <span role="img" aria-label="likes">
-                              ❤️
-                            </span>
+                            <ThumbsUp className="w-4 h-4" />
                             <span>{Number(comment.likes || 0)}</span>
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                            >
+                              삭제
+                            </button>
                             <button
                               onClick={() => handleToggleVisibility(comment.id)}
                               className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium ${

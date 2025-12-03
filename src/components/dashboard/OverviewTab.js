@@ -5,19 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
 import { apiUrl } from '@/lib/config';
 
 
-// 스트레스 지수 계산 헬퍼
-function calculateStressLevel(dailyCount) {
-  if (dailyCount < 1) return { level: '낮음', description: '아직 필터링된 댓글이 많이 없어요', color: '#10B981' };
-  if (dailyCount < 10) return { level: '보통', description: '조금씩 댓글 관리가 되고 있어요!', color: '#3B82F6' };
-  if (dailyCount < 30) return { level: '높음', description: '크리에이터님 고생많으셨네요 필터링되는 댓글이 많습니다 !', color: '#F59E0B' };
-  return { level: '매우 높음', description: '위험해요 AI 풀가동 !', color: '#EF4444' };
-}
 
 // 날씨 정보 헬퍼 (영상별 건전도용)
 function getWeatherInfo(status) {
@@ -69,6 +72,9 @@ export function OverviewTab({ data, channel }) {
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
   
+  // 📌 삭제 확인 다이얼로그 State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
   // 📌 시간대별 필터링 데이터 (임시 하드코딩, 추후 API 연동)
   const timePatternData = {
     distribution: {
@@ -92,17 +98,8 @@ export function OverviewTab({ data, channel }) {
   const thisMonthFiltered = stats.thisMonthFilteredCount || 0;
   const totalFiltered = stats.totalFilteredCount || 0;
   const todayFiltered = stats.todayFilteredCount || 0;
-  
-  // 시간 절약 계산
-  const totalSavedSeconds = thisMonthFiltered * 12;
-  const savedHours = Math.floor(totalSavedSeconds / 3600);
-  const savedMins = Math.floor((totalSavedSeconds % 3600) / 60);
-  
-  // 스트레스 지수 계산
-  const today = new Date();
-  const daysPassed = Math.max(1, today.getDate());
-  const dailyAverage = thisMonthFiltered / daysPassed;
-  const stressInfo = calculateStressLevel(dailyAverage);
+
+
 
   // 2. 📌 [구현완료] 그래프 데이터 Fetching (기간 변경 시 실행)
   useEffect(() => {
@@ -125,18 +122,25 @@ export function OverviewTab({ data, channel }) {
 
       const to = endDate.toISOString().split('T')[0];
       const from = startDate.toISOString().split('T')[0];
+      const periodType =
+        filterPeriod === 'day' ? 'daily' : filterPeriod === 'month' ? 'monthly' : 'yearly';
 
       try {
-        // 백엔드 API 호출 (channelId 필터링 포함)
+        // 📌 작성 시간(published_at) 기준 통계 API 호출 (AgentController)
         const response = await fetch(
-          apiUrl(`api/user/dashboard/filtering-trend?from=${from}&to=${to}&channelId=${channelId}`), 
+          apiUrl(
+            `api/v1/analysis/comments/stats?channelId=${channelId}` +
+              `&period=${periodType}&startDate=${from}&endDate=${to}`
+          ),
           { method: 'GET', credentials: 'include' }
         );
 
         if (response.ok) {
           const trendData = await response.json();
-          // Recharts용 데이터 변환 (총 댓글 수 포함)
-          const formattedData = trendData.map(item => ({
+          const statsArray = Array.isArray(trendData?.stats) ? trendData.stats : [];
+
+          // Recharts용 데이터 변환 (날짜 문자열 그대로 사용)
+          const formattedData = statsArray.map((item) => ({
             name: item.date,
             filtered: item.filteredCount ?? 0,
             total: item.totalCount ?? 0,
@@ -187,6 +191,37 @@ export function OverviewTab({ data, channel }) {
   useEffect(() => {
     setVideoPage(0);
   }, [searchQuery]);
+
+  // 영상 선택 시 페이지 상단으로 스크롤
+  useEffect(() => {
+    if (selectedVideo) {
+      const scrollToTop = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (document.scrollingElement) {
+          document.scrollingElement.scrollTop = 0;
+        }
+      };
+      
+      // 즉시 실행
+      scrollToTop();
+      
+      // 렌더링 후 스크롤
+      requestAnimationFrame(() => {
+        scrollToTop();
+      });
+      
+      // 작은 화면에서 레이아웃 렌더링 완료 후 스크롤
+      const timer = setTimeout(() => {
+        scrollToTop();
+      }, 200);
+      
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [selectedVideo]);
 
   if (selectedVideo) {
     return <VideoDetailTab video={selectedVideo} onBack={() => setSelectedVideo(null)} />;
@@ -280,14 +315,19 @@ export function OverviewTab({ data, channel }) {
             </CardContent>
           </Card>
 
-          {/* 오른쪽 카드 섹션: 이번 달 필터링 현황 (왼쪽) + 빈 카드 (오른쪽) */}
+          {/* 오른쪽 카드 섹션: 해당 채널에서 필터링 현황 (왼쪽) + 빈 카드 (오른쪽) */}
           <Card>
             <CardContent className="pt-5 pb-5 h-full flex flex-col justify-between">
               <div>
-                <p className="text-sm text-gray-500 mt-3">이번 달 필터링된 댓글</p>
-                <p className="text-3xl font-bold text-gray-900 mt-12">{thisMonthFiltered.toLocaleString()}건</p>
-                
+                <p className="text-sm text-gray-500 mt-3">해당 채널에서 필터링 된 댓글</p>
+                <p className="text-3xl font-bold text-red-600 mt-12">{totalFiltered.toLocaleString()}건</p>
               </div>
+              <button 
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-full transition-colors mt-6"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                필터링 된 댓글 삭제하기
+              </button>
             </CardContent>
           </Card>
           
@@ -340,7 +380,7 @@ export function OverviewTab({ data, channel }) {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="size-5 text-gray-500" />
-                  필터링 추이
+                  댓글 필터링 추이
                 </CardTitle>
                 <CardDescription>
                   {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
@@ -356,7 +396,7 @@ export function OverviewTab({ data, channel }) {
                 <SelectContent>
                   <SelectItem value="day">일별 (7일)</SelectItem>
                   <SelectItem value="month">월별 (30일)</SelectItem>
-                  <SelectItem value="year">연별 (1년)</SelectItem>
+                  <SelectItem value="year">연도별 (1년)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -391,7 +431,7 @@ export function OverviewTab({ data, channel }) {
                     contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
                     formatter={(value, name) => [
                       `${Number(value).toLocaleString()}건`,
-                      name === '필터링 댓글' ? '차단된 댓글' : '총 댓글'
+                      name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
                     ]}
                   />
                   <Area 
@@ -432,7 +472,7 @@ export function OverviewTab({ data, channel }) {
                       return (
                         <span>
                           <span className="font-semibold text-gray-900">{timePatternData.red_zone.time_slot}</span>에 
-                          전체 공격의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다.
+                          전체 악플의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다.
                         </span>
                       );
                     }
@@ -497,8 +537,9 @@ export function OverviewTab({ data, channel }) {
       {/* 3. 민심 온도계 및 영상 목록 (기존 유지) */}
       <Card>
         <CardHeader>
-          <CardTitle>영상별 민심 온도계</CardTitle>
-          <CardDescription>영상별 댓글 분위기를 한눈에 파악하세요</CardDescription>
+          <CardTitle>영상 목록</CardTitle>
+          <CardDescription>현재 채널에 등록된 최신 20개 영상 별 댓글 현황(날씨)을 확인할 수 있습니다. 영상 클릭 시 영상 대시보드로 이동합니다</CardDescription>
+          
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2 mb-4">
@@ -525,7 +566,11 @@ export function OverviewTab({ data, channel }) {
                 <div
                   key={video.id}
                   className="group flex flex-col rounded-3xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => setSelectedVideo(video)}
+                  onClick={() => {
+                    // 클릭 시 즉시 스크롤 처리
+                    window.scrollTo(0, 0);
+                    setSelectedVideo(video);
+                  }}
                 >
                   <div className="relative w-full pt-[56.25%] overflow-hidden rounded-3xl bg-gray-100">
                     {video.thumbnail && (
@@ -547,7 +592,10 @@ export function OverviewTab({ data, channel }) {
                     <div className="mt-auto">
                       <div className="flex items-center justify-between text-xs text-gray-500 pb-2">
                         <span>조회수 {video.viewCount?.toLocaleString()}회</span>
-                        <span>{formatPublishedDate(video.publishedAt || video.published_at)}</span>
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-1.5" />
+                          <span>{formatPublishedDate(video.publishedAt || video.published_at)}</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <div
@@ -559,7 +607,6 @@ export function OverviewTab({ data, channel }) {
                             {weather.text}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400">건전도 {score}%</span>
                       </div>
                     </div>
                   </div>
@@ -590,6 +637,41 @@ export function OverviewTab({ data, channel }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* 필터링 된 댓글 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>필터링 된 댓글을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>
+                이 채널에서 필터링 된 총{' '}
+                <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 YouTube에서 영구적으로 삭제됩니다
+              </p>
+              <p className="font-semibold text-gray-900">
+                삭제된 댓글은 복원할 수 없습니다
+              </p>
+              <p className="text-sm text-gray-600">
+                댓글을 검토하거나 개별로 삭제하고 싶다면, 영상 대시보드에서 해당 댓글을 확인하실 수 있습니다
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                // TODO: 실제 삭제 API 호출
+                console.log('필터링 된 댓글 삭제 확인');
+                alert('삭제 기능은 추후 구현 예정입니다.');
+                setShowDeleteDialog(false);
+              }}
+            >
+              삭제하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

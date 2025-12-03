@@ -227,6 +227,7 @@ export function BadCommentsTab({ data }) {
 
     try {
       // 1) 리포트 생성 요청 (큐에 작업 추가)
+      console.log("📤 보고서 생성 요청 전송 중...");
       await fetch(apiUrl("/api/reports"), {
         method: "POST",
         credentials: "include",
@@ -236,72 +237,127 @@ export function BadCommentsTab({ data }) {
           data: {},
         }),
       });
+      console.log("✅ 보고서 생성 요청 완료 (에이전트 처리 대기 중)");
 
-      // 2) 메타데이터 + 위협 인텔리전스 조회 (병렬)
-      const [metaRes, threatRes] = await Promise.all([
-        fetch(apiUrl(`/api/youtube/analysis/channel/${channelDbId}/metadata`), {
-          method: "GET",
-          credentials: "include",
-        }),
-        fetch(apiUrl(`/api/youtube/analysis/channel/${channelDbId}/threat-intelligence`), {
-          method: "GET",
-          credentials: "include",
-        }),
-      ]);
+      // 2) 폴링: 5초마다 메타데이터 조회 시도 (최대 10분 = 120회)
+      let pollCount = 0;
+      const maxPolls = 120; // 10분 (5초 * 120)
+      const pollInterval = 5000; // 5초
 
-      if (!metaRes.ok || !threatRes.ok) {
-        throw new Error("메타데이터/위협 인텔리전스 조회 실패");
-      }
+      const pollForReport = async () => {
+        return new Promise((resolve, reject) => {
+          const interval = setInterval(async () => {
+            pollCount++;
+            console.log(`🔄 보고서 조회 시도 (${pollCount}/${maxPolls})...`);
 
-      const meta = await metaRes.json();
-      const threat = await threatRes.json();
+            try {
+              // 메타데이터 조회 시도
+              const metaRes = await fetch(
+                apiUrl(`/api/youtube/analysis/channel/${channelDbId}/metadata`),
+                {
+                  method: "GET",
+                  credentials: "include",
+                }
+              );
 
-      // 3) 방어 전략 조회
-      const defenseRes = await fetch(
-        apiUrl(`/api/youtube/analysis/channel/${channelDbId}/defense-strategy`),
-        { method: "GET", credentials: "include" }
-      );
+              if (metaRes.ok) {
+                // 성공! 폴링 중단
+                clearInterval(interval);
+                console.log("✅ 보고서 데이터 발견! 전체 데이터 조회 시작...");
 
-      if (!defenseRes.ok) {
-        throw new Error("방어 전략 조회 실패");
-      }
+                // 위협 인텔리전스 상태를 "완료"로 변경
+                setThreatStatus("done");
+                setDefenseStatus("in_progress");
 
-      const defense = await defenseRes.json();
-      const defenseSection = defense.section_2_defense_strategy || defense;
+                const meta = await metaRes.json();
 
-      // 4) 응답을 기존 구조에 맞게 매핑
-      setReportData({
-        channel_name: meta.channelName,
-        generated_at: meta.generatedAt,
-        total_comments: meta.totalComments,
-        section_1_threat_intelligence: {
-          repeat_offenders: threat.repeat_offenders || {},
-          intensity_distribution: threat.intensity_distribution || {
-            critical: 0,
-            high: 0,
-            total: 0,
-          },
-          time_patterns: threat.time_patterns || {
-            distribution: {},
-            red_zone: { time_slot: "", count: 0, percentage: 0 },
-          },
-        },
-        top3_attacked_videos: defenseSection.top3_attacked_videos || [],
-        preventive_guidelines: defenseSection.preventive_guidelines || {
-          do_guidelines: [],
-          dont_guidelines: [],
-        },
-      });
+                // 나머지 데이터 조회 (병렬)
+                const [threatRes, defenseRes] = await Promise.all([
+                  fetch(
+                    apiUrl(`/api/youtube/analysis/channel/${channelDbId}/threat-intelligence`),
+                    {
+                      method: "GET",
+                      credentials: "include",
+                    }
+                  ),
+                  fetch(
+                    apiUrl(`/api/youtube/analysis/channel/${channelDbId}/defense-strategy`),
+                    {
+                      method: "GET",
+                      credentials: "include",
+                    }
+                  ),
+                ]);
+
+                if (!threatRes.ok || !defenseRes.ok) {
+                  throw new Error("위협 인텔리전스/방어 전략 조회 실패");
+                }
+
+                const threat = await threatRes.json();
+                const defense = await defenseRes.json();
+                const defenseSection = defense.section_2_defense_strategy || defense;
+
+                // 응답을 기존 구조에 맞게 매핑
+                const reportData = {
+                  channel_name: meta.channelName,
+                  generated_at: meta.generatedAt,
+                  total_comments: meta.totalComments,
+                  section_1_threat_intelligence: {
+                    repeat_offenders: threat.repeat_offenders || {},
+                    intensity_distribution: threat.intensity_distribution || {
+                      critical: 0,
+                      high: 0,
+                      total: 0,
+                    },
+                    time_patterns: threat.time_patterns || {
+                      distribution: {},
+                      red_zone: { time_slot: "", count: 0, percentage: 0 },
+                    },
+                  },
+                  top3_attacked_videos: defenseSection.top3_attacked_videos || [],
+                  preventive_guidelines: defenseSection.preventive_guidelines || {
+                    do_guidelines: [],
+                    dont_guidelines: [],
+                  },
+                };
+
+                resolve(reportData);
+              } else if (pollCount >= maxPolls) {
+                // 최대 시도 횟수 초과
+                clearInterval(interval);
+                reject(new Error("보고서 생성 시간 초과 (10분)"));
+              }
+              // 아직 데이터 없음 - 계속 폴링
+            } catch (error) {
+              if (pollCount >= maxPolls) {
+                clearInterval(interval);
+                reject(error);
+              }
+              // 에러 발생해도 계속 재시도
+              console.log(`⚠️ 조회 실패, 재시도 중... (${pollCount}/${maxPolls})`);
+            }
+          }, pollInterval);
+        });
+      };
+
+      // 폴링 시작
+      const reportData = await pollForReport();
+
+      // 데이터 설정
+      setReportData(reportData);
 
       // 모든 데이터 수신 완료 → 콘텐츠 방어 전략 보고서 "생성 완료"
       setDefenseStatus("done");
+
+      console.log("🎉 보고서 생성 완료!");
 
       // "생성 완료" 메시지를 사용자가 볼 수 있도록 약간의 딜레이 후 모달 닫기
       setTimeout(() => {
         setOpenReportLoading(false);
       }, 1500);
     } catch (error) {
-      console.error("보고서 생성/조회 실패:", error);
+      console.error("❌ 보고서 생성/조회 실패:", error);
+      alert("보고서 생성에 실패했습니다. 다시 시도해주세요.");
       setThreatStatus("idle");
       setDefenseStatus("idle");
       setOpenReportLoading(false);
@@ -325,20 +381,92 @@ export function BadCommentsTab({ data }) {
   // reportData가 없을 때는 빈 화면 표시
   if (!reportData) {
     return (
-      <div className="w-full flex justify-center items-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
-            메디 보고서
-          </h1>
-          <Button
-            type="button"
-            className="text-base md:text-lg px-8 py-6"
-            onClick={startReportGenerationFlow}
-          >
-            보고서 생성하기
-          </Button>
+      <>
+        <div className="w-full flex justify-center items-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+              메디 보고서
+            </h1>
+            <Button
+              type="button"
+              className="text-base md:text-lg px-8 py-6"
+              onClick={startReportGenerationFlow}
+            >
+              보고서 생성하기
+            </Button>
+          </div>
         </div>
-      </div>
+
+        {/* 보고서 생성 로딩 모달 */}
+        <Dialog open={openReportLoading} onOpenChange={setOpenReportLoading}>
+          <DialogContent
+            className="!w-[420px] sm:!w-[460px] !h-auto !max-h-none max-w-[95vw] py-7 px-7 flex flex-col items-center gap-6"
+            onClose={() => setOpenReportLoading(false)}
+          >
+            <div className="flex flex-col items-center gap-3">
+              {(threatStatus !== "done" || defenseStatus !== "done") && (
+                <div className="w-10 h-10 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin" />
+              )}
+              <DialogTitle className="text-base font-semibold text-gray-900 text-center">
+                메디 보고서를 생성하는 중입니다
+              </DialogTitle>
+              <DialogDescription className="text-xs text-gray-500 text-center">
+                최대 3분 걸릴 수 있어요. 창을 닫지 말고 조금만 기다려 주세요.
+              </DialogDescription>
+            </div>
+
+            <div className="w-full space-y-3 text-sm">
+              {/* 위협 악플 보고서 상태 */}
+              <div className="flex items-center gap-3 px-1">
+                {threatStatus === "done" ? (
+                  <CheckCircle2 className="flex-shrink-0 size-5 text-green-600" />
+                ) : threatStatus === "in_progress" ? (
+                  <Loader2 className="flex-shrink-0 size-5 text-indigo-500 animate-spin" />
+                ) : (
+                  <Circle className="flex-shrink-0 size-5 text-gray-300" />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    위협 악플 보고서
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {threatStatus === "done"
+                      ? "생성 완료"
+                      : threatStatus === "in_progress"
+                      ? "생성 중"
+                      : "생성 대기"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-200 my-2" />
+
+              {/* 콘텐츠 방어 전략 보고서 상태 */}
+              <div className="flex items-center gap-3 px-1">
+                {defenseStatus === "done" ? (
+                  <CheckCircle2 className="flex-shrink-0 size-5 text-green-600" />
+                ) : defenseStatus === "in_progress" ? (
+                  <Loader2 className="flex-shrink-0 size-5 text-indigo-500 animate-spin" />
+                ) : (
+                  <Circle className="flex-shrink-0 size-5 text-gray-300" />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    콘텐츠 방어 전략 보고서
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {defenseStatus === "done"
+                      ? "생성 완료"
+                      : defenseStatus === "in_progress"
+                      ? "생성 중"
+                      : "생성 대기"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -689,7 +817,7 @@ export function BadCommentsTab({ data }) {
                         <TrendingUp className="size-5 text-red-600 mt-0.5 shrink-0" />
                         <div className="text-sm">
                           <span className="font-bold text-gray-900">{section1.time_patterns.red_zone.time_slot}</span>에 
-                          전체 공격의 <span className="font-bold text-red-600">{section1.time_patterns.red_zone.percentage}%</span>가 집중되었습니다.
+                          전체 악플의 <span className="font-bold text-red-600">{section1.time_patterns.red_zone.percentage}%</span>가 집중되었습니다.
                         </div>
                       </div>
 
