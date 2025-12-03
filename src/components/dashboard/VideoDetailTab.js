@@ -401,7 +401,12 @@ export function VideoDetailTab({ video, onBack }) {
                   {new Date(displayVideo.publishedAt).toLocaleDateString('ko-KR')} 게시
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                  <span>댓글 {Number(totalComments).toLocaleString()}개</span>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1">
+                    <ThumbsUp className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 mr-1" />
+                    <span className="text-gray-700">
+                      {Number(displayVideo.likeCount ?? displayVideo.like_count ?? 0).toLocaleString()}
+                    </span>
+                  </span>
                   <span className="hidden sm:inline h-3 w-px bg-gray-200" />
                   <span>조회수 {Number(displayVideo.viewCount || 0).toLocaleString()}회</span>
                 </div>
