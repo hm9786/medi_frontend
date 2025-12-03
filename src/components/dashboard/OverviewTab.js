@@ -122,18 +122,25 @@ export function OverviewTab({ data, channel }) {
 
       const to = endDate.toISOString().split('T')[0];
       const from = startDate.toISOString().split('T')[0];
+      const periodType =
+        filterPeriod === 'day' ? 'daily' : filterPeriod === 'month' ? 'monthly' : 'yearly';
 
       try {
-        // 백엔드 API 호출 (channelId 필터링 포함)
+        // 📌 작성 시간(published_at) 기준 통계 API 호출 (AgentController)
         const response = await fetch(
-          apiUrl(`api/user/dashboard/filtering-trend?from=${from}&to=${to}&channelId=${channelId}`), 
+          apiUrl(
+            `api/v1/analysis/comments/stats?channelId=${channelId}` +
+              `&period=${periodType}&startDate=${from}&endDate=${to}`
+          ),
           { method: 'GET', credentials: 'include' }
         );
 
         if (response.ok) {
           const trendData = await response.json();
-          // Recharts용 데이터 변환 (총 댓글 수 포함)
-          const formattedData = trendData.map(item => ({
+          const statsArray = Array.isArray(trendData?.stats) ? trendData.stats : [];
+
+          // Recharts용 데이터 변환 (날짜 문자열 그대로 사용)
+          const formattedData = statsArray.map((item) => ({
             name: item.date,
             filtered: item.filteredCount ?? 0,
             total: item.totalCount ?? 0,
