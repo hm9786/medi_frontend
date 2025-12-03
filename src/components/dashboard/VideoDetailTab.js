@@ -426,9 +426,9 @@ export function VideoDetailTab({ video, onBack }) {
       <Button
         variant="ghost"
         onClick={onBack}
-        className="mb-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 pl-0"
+        className="mb-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 pl-0 py-4 px-5 text-xl font-bold"
       >
-        <ArrowLeft className="size-4 mr-2" />
+        <ArrowLeft className="size-7 mr-3" />
         채널 대시보드로 돌아가기
       </Button>
 

@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
@@ -61,6 +71,9 @@ export function OverviewTab({ data, channel }) {
   const [filterPeriod, setFilterPeriod] = useState('day'); // day, month, year
   const [chartData, setChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
+  
+  // 📌 삭제 확인 다이얼로그 State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   // 📌 시간대별 필터링 데이터 (임시 하드코딩, 추후 API 연동)
   const timePatternData = {
@@ -304,10 +317,7 @@ export function OverviewTab({ data, channel }) {
               </div>
               <button 
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-full transition-colors mt-6"
-                onClick={() => {
-                  // TODO: 필터링 된 댓글 삭제 기능 구현
-                  console.log('필터링 된 댓글 삭제하기 클릭');
-                }}
+                onClick={() => setShowDeleteDialog(true)}
               >
                 필터링 된 댓글 삭제하기
               </button>
@@ -620,6 +630,41 @@ export function OverviewTab({ data, channel }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* 필터링 된 댓글 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>필터링 된 댓글을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>
+                이 채널에서 필터링 된 총{' '}
+                <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 YouTube에서 영구적으로 삭제됩니다
+              </p>
+              <p className="font-semibold text-gray-900">
+                삭제된 댓글은 복원할 수 없습니다
+              </p>
+              <p className="text-sm text-gray-600">
+                댓글을 검토하거나 개별로 삭제하고 싶다면, 영상 대시보드에서 해당 댓글을 확인하실 수 있습니다
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                // TODO: 실제 삭제 API 호출
+                console.log('필터링 된 댓글 삭제 확인');
+                alert('삭제 기능은 추후 구현 예정입니다.');
+                setShowDeleteDialog(false);
+              }}
+            >
+              삭제하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
