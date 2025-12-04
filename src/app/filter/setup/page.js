@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
@@ -67,6 +67,14 @@ const CATEGORIES = [
 ];
 
 export default function FilterSetupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>}>
+      <FilterSetupInner />
+    </Suspense>
+  );
+}
+
+function FilterSetupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const step = searchParams.get("step") || "1";
