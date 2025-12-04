@@ -1,7 +1,10 @@
 # ===================================
 # Stage 1: Dependencies
 # ===================================
-FROM node:18-alpine AS deps
+# ⚠️ 수정: node:18-alpine → node:20-alpine
+#  - 이유: Next.js 16은 Node >= 20.9.0 필요
+#  - node:20-alpine 이미지는 20.x 대 버전이므로 요구 조건을 만족함
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 # libc6-compat 설치 (Alpine Linux에서 필요)
@@ -14,7 +17,8 @@ RUN npm ci
 # ===================================
 # Stage 2: Builder
 # ===================================
-FROM node:18-alpine AS builder
+# ⚠️ 수정: node:18-alpine → node:20-alpine
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # deps 스테이지에서 node_modules 복사
@@ -26,18 +30,18 @@ COPY . .
 # 환경 변수 설정 (빌드 시)
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# ⚠️ 추가 필요: standalone 모드 활성화를 위한 환경 변수
-# Next.js가 server.js를 생성하도록 명시적 설정
-ENV NEXT_OUTPUT=standalone
+# (선택) standalone 모드 명시
+# 실제로는 next.config.js에서 output: 'standalone' 설정하는 것이 더 중요함
+# ENV NEXT_OUTPUT=standalone
 
 # Next.js 빌드 실행 (standalone 출력)
-# ⚠️ 주의: next.config.js에 output: 'standalone' 설정 필요!
 RUN npm run build
 
 # ===================================
 # Stage 3: Runner
 # ===================================
-FROM node:18-alpine AS runner
+# ⚠️ 수정: node:18-alpine → node:20-alpine
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -60,6 +64,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# ⚠️ server.js로 실행 (next start 아님!)
-# 주의: standalone 빌드가 정상적으로 되어야 server.js가 생성됨
+# server.js로 실행 (next start 아님!)
 CMD ["node", "server.js"]
