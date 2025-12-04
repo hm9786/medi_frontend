@@ -1,6 +1,6 @@
-"use client";
+ "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldAlert, TriangleAlert, UserCheck, ArrowRight, AlertTriangle, UserX, Clock, Target, Siren, TrendingUp, FileText, MessageSquare, CheckCircle, ThumbsUp, ThumbsDown, PlaySquare, ShieldCheck, CheckCircle2, XCircle, ChevronDown, ChevronUp, Lightbulb, XOctagon, PlayCircle, Info, Loader2, Circle, TrendingUp as TrendingUpIcon } from "lucide-react";
 import {
@@ -200,6 +200,10 @@ export function BadCommentsTab({ data }) {
   const [openDefenseReport, setOpenDefenseReport] = useState(false);
   const [expandedVideos, setExpandedVideos] = useState({});
 
+  // 보고서 생성 폴링 및 취소 관리를 위한 ref
+  const pollIntervalRef = useRef(null);
+  const isReportCancelledRef = useRef(false);
+
   // 선택된 채널 정보 (페이지에서 내려주는 데이터)
   const channelDbId = data?.channelDbId || data?.channelId;
   const youtubeChannelId = data?.youtubeChannelId;
@@ -214,12 +218,55 @@ export function BadCommentsTab({ data }) {
   const [threatStatus, setThreatStatus] = useState("idle");
   const [defenseStatus, setDefenseStatus] = useState("idle");
 
+  // 폴링 interval 정리
+  const clearReportPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
+
+  // 로딩 모달에서 X 버튼/바깥 클릭으로 닫을 때 보고서 생성 취소
+  const handleCancelReportGeneration = () => {
+    isReportCancelledRef.current = true;
+    clearReportPolling();
+    setThreatStatus("idle");
+    setDefenseStatus("idle");
+  };
+
+  // 로딩 모달 열림/닫힘 제어 (닫힐 때 진행 중이면 취소 처리)
+  const handleReportDialogOpenChange = (open) => {
+    if (!open) {
+      // 아직 생성이 끝나지 않은 상태에서 닫히면 "취소"로 처리
+      if (threatStatus !== "done" || defenseStatus !== "done") {
+        handleCancelReportGeneration();
+      }
+      setOpenReportLoading(false);
+    } else {
+      // 새로 열릴 때는 이전 취소 상태/interval 초기화
+      isReportCancelledRef.current = false;
+      clearReportPolling();
+      setOpenReportLoading(true);
+    }
+  };
+
+  // 언마운트 시 폴링 정리
+  useEffect(() => {
+    return () => {
+      clearReportPolling();
+    };
+  }, []);
+
   // 보고서 생성 + 로딩 플로우 시작
   const startReportGenerationFlow = async () => {
     if (!channelDbId || !youtubeChannelId) {
       console.warn("채널 ID가 없어 보고서를 생성할 수 없습니다.");
       return;
     }
+
+    // 새 요청 시작 시 취소 상태/폴링 초기화
+    isReportCancelledRef.current = false;
+    clearReportPolling();
 
     setOpenReportLoading(true);
     setThreatStatus("in_progress");
@@ -250,6 +297,14 @@ export function BadCommentsTab({ data }) {
             pollCount++;
             console.log(`🔄 보고서 조회 시도 (${pollCount}/${maxPolls})...`);
 
+            // 사용자가 로딩 모달을 닫아 생성 플로우를 취소한 경우
+            if (isReportCancelledRef.current) {
+              clearInterval(interval);
+              pollIntervalRef.current = null;
+              reject(new Error("REPORT_GENERATION_CANCELLED"));
+              return;
+            }
+
             try {
               // 메타데이터 조회 시도
               const metaRes = await fetch(
@@ -263,6 +318,7 @@ export function BadCommentsTab({ data }) {
               if (metaRes.ok) {
                 // 성공! 폴링 중단
                 clearInterval(interval);
+                pollIntervalRef.current = null;
                 console.log("✅ 보고서 데이터 발견! 전체 데이터 조회 시작...");
 
                 // 위협 인텔리전스 상태를 "완료"로 변경
@@ -325,18 +381,23 @@ export function BadCommentsTab({ data }) {
               } else if (pollCount >= maxPolls) {
                 // 최대 시도 횟수 초과
                 clearInterval(interval);
+                pollIntervalRef.current = null;
                 reject(new Error("보고서 생성 시간 초과 (10분)"));
               }
               // 아직 데이터 없음 - 계속 폴링
             } catch (error) {
               if (pollCount >= maxPolls) {
                 clearInterval(interval);
+                pollIntervalRef.current = null;
                 reject(error);
               }
               // 에러 발생해도 계속 재시도
               console.log(`⚠️ 조회 실패, 재시도 중... (${pollCount}/${maxPolls})`);
             }
           }, pollInterval);
+
+          // interval id를 ref에 저장해서 외부에서도 정리 가능하도록
+          pollIntervalRef.current = interval;
         });
       };
 
@@ -356,8 +417,13 @@ export function BadCommentsTab({ data }) {
         setOpenReportLoading(false);
       }, 1500);
     } catch (error) {
-      console.error("❌ 보고서 생성/조회 실패:", error);
-      alert("보고서 생성에 실패했습니다. 다시 시도해주세요.");
+      // 사용자가 로딩 모달을 닫아서 취소한 경우에는 에러 알림을 띄우지 않음
+      if (error?.message === "REPORT_GENERATION_CANCELLED") {
+        console.log("⏹ 보고서 생성 플로우가 사용자에 의해 취소되었습니다.");
+      } else {
+        console.error("❌ 보고서 생성/조회 실패:", error);
+        alert("보고서 생성에 실패했습니다. 다시 시도해주세요.");
+      }
       setThreatStatus("idle");
       setDefenseStatus("idle");
       setOpenReportLoading(false);
@@ -398,10 +464,10 @@ export function BadCommentsTab({ data }) {
         </div>
 
         {/* 보고서 생성 로딩 모달 */}
-        <Dialog open={openReportLoading} onOpenChange={setOpenReportLoading}>
+        <Dialog open={openReportLoading} onOpenChange={handleReportDialogOpenChange}>
           <DialogContent
             className="!w-[420px] sm:!w-[460px] !h-auto !max-h-none max-w-[95vw] py-7 px-7 flex flex-col items-center gap-6"
-            onClose={() => setOpenReportLoading(false)}
+            onClose={() => handleReportDialogOpenChange(false)}
           >
             <div className="flex flex-col items-center gap-3">
               {(threatStatus !== "done" || defenseStatus !== "done") && (
@@ -1111,10 +1177,10 @@ export function BadCommentsTab({ data }) {
         </Dialog>
 
         {/* 보고서 생성 로딩 모달 (위협 + 방어 전략) */}
-        <Dialog open={openReportLoading} onOpenChange={setOpenReportLoading}>
+        <Dialog open={openReportLoading} onOpenChange={handleReportDialogOpenChange}>
           <DialogContent
             className="!w-[420px] sm:!w-[460px] !h-auto !max-h-none max-w-[95vw] py-7 px-7 flex flex-col items-center gap-6"
-            onClose={() => setOpenReportLoading(false)}
+            onClose={() => handleReportDialogOpenChange(false)}
           >
             <div className="flex flex-col items-center gap-3">
               {(threatStatus !== "done" || defenseStatus !== "done") && (

@@ -75,6 +75,9 @@ export function OverviewTab({ data, channel }) {
   // 📌 삭제 확인 다이얼로그 State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
+  // 📌 영상별 필터링 통계 State
+  const [videoStats, setVideoStats] = useState({}); // { videoId: { totalFilteredCount, totalCommentCount, filteringRatio } }
+  
   // 📌 시간대별 필터링 데이터 (임시 하드코딩, 추후 API 연동)
   const timePatternData = {
     distribution: {
@@ -191,6 +194,59 @@ export function OverviewTab({ data, channel }) {
   useEffect(() => {
     setVideoPage(0);
   }, [searchQuery]);
+
+  // 📌 영상별 필터링 통계 가져오기
+  useEffect(() => {
+    const fetchVideoStats = async () => {
+      const recentVideos = data?.videos || [];
+      if (recentVideos.length === 0) return;
+
+      const statsPromises = recentVideos.map(async (video) => {
+        try {
+          const response = await fetch(
+            apiUrl(`api/user/dashboard/videos/${video.id}/filtering-statistics`),
+            { method: 'GET', credentials: 'include' }
+          );
+          
+          if (response.ok) {
+            const stats = await response.json();
+            const totalFilteredCount = stats.totalFilteredCount || 0;
+            const totalCommentCount = stats.totalCommentCount || 0;
+            const filteringRatio = totalCommentCount > 0 
+              ? (totalFilteredCount / totalCommentCount) * 100 
+              : 0;
+            
+            return {
+              videoId: video.id,
+              totalFilteredCount,
+              totalCommentCount,
+              filteringRatio
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error(`영상 ${video.id} 통계 조회 실패:`, error);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(statsPromises);
+      const statsMap = {};
+      results.forEach((result) => {
+        if (result) {
+          statsMap[result.videoId] = {
+            totalFilteredCount: result.totalFilteredCount,
+            totalCommentCount: result.totalCommentCount,
+            filteringRatio: result.filteringRatio
+          };
+        }
+      });
+      
+      setVideoStats(statsMap);
+    };
+
+    fetchVideoStats();
+  }, [data?.videos]);
 
   // 영상 선택 시 페이지 상단으로 스크롤
   useEffect(() => {
@@ -558,9 +614,15 @@ export function OverviewTab({ data, channel }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedVideos.map((video) => {
-              const score = (video.id * 17) % 41 + 60; 
-              const weather = getWeatherInfo(score);
-              const WeatherIcon = weather.icon;
+              // 영상별 필터링 통계 가져오기
+              const stats = videoStats[video.id];
+              let weatherInfo = null;
+              let WeatherIcon = null;
+              
+              if (stats && stats.totalCommentCount > 0 && !isNaN(stats.filteringRatio)) {
+                weatherInfo = getChannelWeatherInfo(stats.filteringRatio);
+                WeatherIcon = weatherInfo.icon;
+              }
 
               return (
                 <div
@@ -597,17 +659,19 @@ export function OverviewTab({ data, channel }) {
                           <span>{formatPublishedDate(video.publishedAt || video.published_at)}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <div
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-opacity-70"
-                          style={{ backgroundColor: weather.bgColor }}
-                        >
-                          <WeatherIcon className="h-4 w-4" style={{ color: weather.color }} />
-                          <span className="text-xs font-semibold" style={{ color: weather.color }}>
-                            {weather.text}
-                          </span>
+                      {weatherInfo && WeatherIcon && (
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <div
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+                            style={{ backgroundColor: `${weatherInfo.color}20` }}
+                          >
+                            <WeatherIcon className="h-4 w-4" style={{ color: weatherInfo.color }} />
+                            <span className="text-xs font-semibold" style={{ color: weatherInfo.color }}>
+                              {weatherInfo.text}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
