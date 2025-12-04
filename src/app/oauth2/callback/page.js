@@ -1,12 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useDispatch } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginSuccess, loginFailure } from "@/lib/slices/authSlice";
 import { apiUrl } from "@/lib/config";
+import { Loader2 } from "lucide-react";
 
 export default function OAuth2CallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <OAuth2CallbackInner />
+    </Suspense>
+  );
+}
+
+function OAuth2CallbackInner() {
   const dispatch = useDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
