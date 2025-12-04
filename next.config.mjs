@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     // 외부 이미지 도메인 허용 (YouTube, Google 등)
     domains: [
