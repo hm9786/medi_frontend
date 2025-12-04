@@ -26,7 +26,12 @@ COPY . .
 # 환경 변수 설정 (빌드 시)
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# ⚠️ 추가 필요: standalone 모드 활성화를 위한 환경 변수
+# Next.js가 server.js를 생성하도록 명시적 설정
+ENV NEXT_OUTPUT=standalone
+
 # Next.js 빌드 실행 (standalone 출력)
+# ⚠️ 주의: next.config.js에 output: 'standalone' 설정 필요!
 RUN npm run build
 
 # ===================================
@@ -55,5 +60,6 @@ USER nextjs
 
 EXPOSE 3000
 
-# ⭐ server.js로 실행 (next start 아님!)
+# ⚠️ server.js로 실행 (next start 아님!)
+# 주의: standalone 빌드가 정상적으로 되어야 server.js가 생성됨
 CMD ["node", "server.js"]
