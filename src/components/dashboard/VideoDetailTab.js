@@ -6,40 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown, ThumbsUp, Sun, Cloud, CloudRain } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { apiUrl } from '@/lib/config';
-
-const getStressBadgeInfo = (averageCount) => {
-  if (averageCount >= 40) {
-    return {
-      label: '위험',
-      description: '상시 모니터링이 필요한 수준입니다.',
-      badgeClass: 'bg-red-100 text-red-700 border-red-200',
-    };
-  }
-  if (averageCount >= 20) {
-    return {
-      label: '주의',
-      description: '필터링 빈도가 높습니다. 추세를 확인하세요.',
-      badgeClass: 'bg-orange-100 text-orange-700 border-orange-200',
-    };
-  }
-  if (averageCount >= 5) {
-    return {
-      label: '보통',
-      description: '안정적으로 관리되고 있습니다.',
-      badgeClass: 'bg-blue-100 text-blue-700 border-blue-200',
-    };
-  }
-  return {
-    label: '안정',
-    description: '필터링 빈도가 매우 낮습니다.',
-    badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  };
-};
 
 export function VideoDetailTab({ video, onBack }) {
   const router = useRouter();
@@ -334,6 +305,19 @@ export function VideoDetailTab({ video, onBack }) {
     return date.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
   };
 
+  // 영상별 날씨 정보 헬퍼 (필터링 댓글 비율 기준)
+  const getVideoWeatherInfo = (filteringRatio) => {
+    if (filteringRatio < 1) {
+      return { icon: Sun, text: '맑음', color: '#FFA500' };
+    } else if (filteringRatio >= 1 && filteringRatio < 5) {
+      return { icon: Cloud, text: '흐림', color: '#9CA3AF' };
+    } else if (filteringRatio >= 5 && filteringRatio < 10) {
+      return { icon: CloudRain, text: '우천', color: '#6366F1' };
+    } else {
+      return { icon: CloudRain, text: '뇌우', color: '#EF4444' };
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[600px]">
@@ -359,7 +343,7 @@ export function VideoDetailTab({ video, onBack }) {
   const dailyAverageFiltered = recentWeekFilteredCount
     ? Math.max(1, Math.round(recentWeekFilteredCount / 7))
     : Math.max(0, Math.round(filteredComments / Math.max(chartData.length || 1, 7)));
-  const stressInfo = getStressBadgeInfo(dailyAverageFiltered);
+
 
   // 그래프 최신 값 (범례용)
   const lastChartValue = chartData.length > 0 ? chartData[chartData.length - 1].filtered : 0;
@@ -407,20 +391,44 @@ export function VideoDetailTab({ video, onBack }) {
                       {Number(displayVideo.likeCount ?? displayVideo.like_count ?? 0).toLocaleString()}
                     </span>
                   </span>
-                  <span className="hidden sm:inline h-3 w-px bg-gray-200" />
                   <span>조회수 {Number(displayVideo.viewCount || 0).toLocaleString()}회</span>
                 </div>
               </div>
             </div>
 
-            {/* 우측: 빈 카드 / 총 댓글 / 필터링 된 댓글 / 필터링 비율 카드 (가로 병렬) */}
+            {/* 우측: 영상 날씨 / 총 댓글 / 필터링 된 댓글 / 필터링 비율 카드 (가로 병렬) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {/* 빈 카드 */}
-              <div className="rounded-xl sm:rounded-2xl bg-gray-50 flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+              {/* 영상 날씨 카드 */}
+              <div className="rounded-xl sm:rounded-2xl bg-gray-50 flex flex-col justify-center items-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+                {(() => {
+                  const filteringRatio = parseFloat(filteringRate) || 0;
+                  const weatherInfo = getVideoWeatherInfo(filteringRatio);
+                  const WeatherIcon = weatherInfo.icon;
+                  
+                  if (totalComments === 0 || isNaN(filteringRatio)) {
+                    return (
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <Cloud className="size-6 sm:size-8 text-gray-300" />
+                        <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+                          데이터 없음
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="flex flex-col items-center justify-center gap-1 w-full">
+                      <WeatherIcon className="size-6 sm:size-8" style={{ color: weatherInfo.color }} />
+                      <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-tight">
+                        현재 영상 날씨는 <span className="font-bold" style={{ color: weatherInfo.color }}>{weatherInfo.text}</span>입니다
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 총 댓글 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#F5F5F7] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+              <div className="rounded-xl sm:rounded-2xl bg-[#F5F5F7] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
                 <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-gray-600 mb-0.5 sm:mb-1 font-medium">
                   <MessageSquare className="size-3 sm:size-4" />
                   <span className="hidden sm:inline">총 댓글</span>
@@ -433,10 +441,10 @@ export function VideoDetailTab({ video, onBack }) {
               </div>
 
               {/* 필터링된 댓글 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#F4F7FF] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+              <div className="rounded-xl sm:rounded-2xl bg-[#F4F7FF] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
                 <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#3756B2] mb-0.5 sm:mb-1 font-medium">
                   <Shield className="size-3 sm:size-4" />
-                  <span className="hidden sm:inline">필터링 된 댓글</span>
+                  <span className="hidden sm:inline">필터링 댓글 수 </span>
                   <span className="sm:hidden">필터링</span>
                 </div>
                 <div className="text-sm sm:text-lg md:text-2xl font-bold text-[#1D3A8A]">
@@ -446,7 +454,7 @@ export function VideoDetailTab({ video, onBack }) {
               </div>
 
               {/* 필터링 비율 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#FFF5EC] flex flex-col justify-center px-2 sm:px-4 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
+              <div className="rounded-xl sm:rounded-2xl bg-[#FFF5EC] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
                 <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#D97706] mb-0.5 sm:mb-1 font-medium">
                   <AlertTriangle className="size-3 sm:size-4" />
                   <span className="hidden sm:inline">필터링 비율</span>
