@@ -1,9 +1,6 @@
 # ===================================
 # Stage 1: Dependencies
 # ===================================
-# ⚠️ 수정: node:18-alpine → node:20-alpine
-#  - 이유: Next.js 16은 Node >= 20.9.0 필요
-#  - node:20-alpine 이미지는 20.x 대 버전이므로 요구 조건을 만족함
 FROM node:20-alpine AS deps
 WORKDIR /app
 
@@ -17,7 +14,6 @@ RUN npm ci
 # ===================================
 # Stage 2: Builder
 # ===================================
-# ⚠️ 수정: node:18-alpine → node:20-alpine
 FROM node:20-alpine AS builder
 WORKDIR /app
 
@@ -30,9 +26,10 @@ COPY . .
 # 환경 변수 설정 (빌드 시)
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# (선택) standalone 모드 명시
-# 실제로는 next.config.js에서 output: 'standalone' 설정하는 것이 더 중요함
-# ENV NEXT_OUTPUT=standalone
+# ⚠️ [추가] 빌드 시 환경변수 에러 방지용 (기본값 설정)
+# 실제로는 config.js에서 window.location.origin을 쓰므로 이 값은 무시됨
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 # Next.js 빌드 실행 (standalone 출력)
 RUN npm run build
@@ -40,7 +37,6 @@ RUN npm run build
 # ===================================
 # Stage 3: Runner
 # ===================================
-# ⚠️ 수정: node:18-alpine → node:20-alpine
 FROM node:20-alpine AS runner
 WORKDIR /app
 
