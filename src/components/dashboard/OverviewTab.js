@@ -79,21 +79,9 @@ export function OverviewTab({ data, channel }) {
   // 📌 영상별 필터링 통계 State
   const [videoStats, setVideoStats] = useState({}); // { videoId: { totalFilteredCount, totalCommentCount, filteringRatio } }
   
-  // 📌 시간대별 필터링 데이터 (임시 하드코딩, 추후 API 연동)
-  const timePatternData = {
-    distribution: {
-      "새벽 (00-06시)": 12,
-      "오전 (06-12시)": 4,
-      "오후 (12-18시)": 12,
-      "저녁 (18-22시)": 3,
-      "심야 (22-24시)": 3
-    },
-    red_zone: {
-      time_slot: "새벽 (00-06시)",
-      count: 12,
-      percentage: 35.3
-    }
-  };
+  // 📌 시간대별 필터링 데이터 (API에서 조회)
+  const [timePatternData, setTimePatternData] = useState(null);
+  const [isTimePatternLoading, setIsTimePatternLoading] = useState(false);
 
   // 1. 데이터 추출
   const stats = data?.stats || {};
@@ -164,6 +152,44 @@ export function OverviewTab({ data, channel }) {
 
     fetchTrendData();
   }, [filterPeriod, channelId]); // 기간이나 채널이 바뀌면 재실행
+
+  // 3. 📌 [구현완료] 시간대별 악플 통계 데이터 Fetching
+  useEffect(() => {
+    const fetchTimePatterns = async () => {
+      if (!channelId) return;
+
+      setIsTimePatternLoading(true);
+      
+      try {
+        const response = await fetch(
+          apiUrl(`api/youtube/analysis/channel/${channelId}/dashboard/time-patterns`),
+          { method: 'GET', credentials: 'include' }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setTimePatternData({
+            distribution: data.distribution || {},
+            red_zone: data.red_zone || {
+              time_slot: '',
+              count: 0,
+              percentage: 0
+            }
+          });
+        } else {
+          console.error("시간대별 악플 통계 조회 실패:", response.status);
+          setTimePatternData(null);
+        }
+      } catch (error) {
+        console.error("시간대별 악플 통계 로드 오류:", error);
+        setTimePatternData(null);
+      } finally {
+        setIsTimePatternLoading(false);
+      }
+    };
+
+    fetchTimePatterns();
+  }, [channelId]); // 채널이 바뀌면 재실행
 
   // 채널 통계 계산 및 영상 목록 필터링
   const recentVideos = data?.videos || [];
@@ -516,6 +542,9 @@ export function OverviewTab({ data, channel }) {
                 </CardTitle>
                 <CardDescription>
                   {(() => {
+                    if (!timePatternData) {
+                      return '시간대별 악플 집중 현황입니다';
+                    }
                     const totalCount = Object.values(timePatternData.distribution).reduce((sum, val) => sum + val, 0);
                     if (totalCount > 0 && timePatternData.red_zone.count > 0) {
                       return (
@@ -532,7 +561,15 @@ export function OverviewTab({ data, channel }) {
             </div>
           </CardHeader>
           <CardContent>
-            {(() => {
+            {isTimePatternLoading ? (
+              <div className="h-[480px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : !timePatternData ? (
+              <div className="h-[480px] flex items-center justify-center">
+                <p className="text-sm text-gray-500">시간대별 악플 통계 데이터를 불러올 수 없습니다</p>
+              </div>
+            ) : (() => {
               // 시간대 데이터 변환 (Object -> Array for Chart)
               const timeChartData = Object.entries(timePatternData.distribution).map(([key, value]) => ({
                 name: key.split(' ')[0], // "새벽 (00-06시)" -> "새벽"

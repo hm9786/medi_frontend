@@ -15,12 +15,12 @@ export default function Navigation({ hideButtons = false }) {
           {!hideButtons && (
             <>
               <Link href="/login">
-                <Button variant="outline" size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 border-slate-200 transition-colors font-medium">
+                <Button variant="outline" size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 border-slate-200 transition-colors font-bold">
                   로그인
                 </Button>
               </Link>
               <Link href="/signup/step0">
-                <Button size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors font-medium">
+                <Button size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors font-bold">
                   회원가입
                 </Button>
               </Link>

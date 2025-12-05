@@ -108,7 +108,7 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-medium text-black mb-1 leading-[1.5]">내 채널 관리</h2>
+          <h2 className="text-black mb-6" style={{ fontWeight: 700, fontSize: '34px' }}>내 채널 관리</h2>
             <p className="text-gray-600 leading-[1.5]">등록된 채널 {channels?.length || 0}개</p>
           </div>
           <div className="flex flex-col md:items-end gap-2">
