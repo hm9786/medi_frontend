@@ -36,8 +36,7 @@ RUN npm run build
 
 # ===================================
 # Stage 3: Runner
-# ===================================
-FROM node:20-alpine AS runner
+# ===================================FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -45,14 +44,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# 보안: 비-루트 사용자 생성
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Public 폴더 복사 (빌드 후)
 COPY --from=builder /app/public ./public
-
-# Standalone 폴더 복사 (⭐ 핵심)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -60,5 +55,4 @@ USER nextjs
 
 EXPOSE 3000
 
-# server.js로 실행 (next start 아님!)
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node server.js || node .next/standalone/server.js || node .next/standalone/server/index.js"]
