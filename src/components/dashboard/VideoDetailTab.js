@@ -28,6 +28,7 @@ export function VideoDetailTab({ video, onBack }) {
   const [visibleOriginalComments, setVisibleOriginalComments] = useState(() => new Set());
   const [sortBy, setSortBy] = useState('date');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [deletingCommentIds, setDeletingCommentIds] = useState(() => new Set()); // 삭제 중인 댓글 ID 추적
   const sortDropdownRef = useRef(null);
   const topRef = useRef(null); // 최상단 요소 참조
 
@@ -153,11 +154,11 @@ export function VideoDetailTab({ video, onBack }) {
           const trendJson = await response.json();
           const statsArray = Array.isArray(trendJson?.stats) ? trendJson.stats : [];
 
-          const formattedTrend = statsArray.map((t) => ({
-            // "YYYY-MM-DD" → "MM/DD" 형태로 축 약식 표기
-            date: (t.date || '').substring(5).replace('-', '/') || t.date,
-            filtered: t.filteredCount ?? 0,
-            total: t.totalCount ?? 0,
+          // Recharts용 데이터 변환 (날짜 문자열 그대로 사용)
+          const formattedTrend = statsArray.map((item) => ({
+            name: item.date,
+            filtered: item.filteredCount ?? 0,
+            total: item.totalCount ?? 0,
           }));
           setChartData(formattedTrend);
         }
@@ -215,13 +216,17 @@ export function VideoDetailTab({ video, onBack }) {
           : payload?.data || [];
 
       const normalized = rawList
-        .map((item, index) => ({
-          id: item.id || item.commentId || item.youtubeCommentId || `comment-${index}`,
-          author: item.author || item.authorName || item.authorDisplayName || '익명',
-          content: item.content || item.text || item.textOriginal || item.text_original || '',
-          publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
-          likes: Number(item.likeCount ?? item.likes ?? item.like ?? 0) || 0,
-        }))
+        .map((item, index) => {
+          const youtubeCommentId = item.youtubeCommentId || item.id || item.commentId || `comment-${index}`;
+          return {
+            id: youtubeCommentId, // id로 youtubeCommentId 사용
+            youtubeCommentId: youtubeCommentId, // 원본 youtubeCommentId도 보존
+            author: item.author || item.authorName || item.authorDisplayName || item.commenterName || '익명',
+            content: item.content || item.text || item.textOriginal || item.text_original || item.commentText || '',
+            publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
+            likes: Number(item.likeCount ?? item.likes ?? item.like ?? 0) || 0,
+          };
+        })
         .filter((comment) => comment.content?.trim());
 
       setOriginalComments(normalized);
@@ -271,9 +276,48 @@ export function VideoDetailTab({ video, onBack }) {
     // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
   };
 
-  const handleDeleteComment = (commentId) => {
-    // TODO: 백엔드 연동 시 실제 삭제 API 호출로 교체
-    console.warn('삭제 버튼 클릭됨 (UI 전용):', commentId);
+  const handleDeleteComment = async (commentId) => {
+    // 삭제 확인
+    if (!window.confirm('이 댓글을 삭제하시겠습니까?\n삭제된 댓글은 복원할 수 없습니다.')) {
+      return;
+    }
+
+    // commentId가 실제 youtubeCommentId인지 확인
+    // fetchOriginalComments에서 youtubeCommentId를 id로 매핑했으므로 commentId가 youtubeCommentId
+    // 하지만 더 안전하게 하기 위해 원본 댓글 객체에서 youtubeCommentId를 찾아봅니다
+    const comment = originalComments.find(c => c.id === commentId);
+    const youtubeCommentId = comment?.youtubeCommentId || commentId;
+
+    // 삭제 중 상태 추가
+    setDeletingCommentIds((prev) => new Set(prev).add(commentId));
+
+    try {
+      const response = await fetch(
+        apiUrl(`api/youtube/comments/${youtubeCommentId}`),
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `댓글 삭제 실패: ${response.status}`);
+      }
+
+      // 삭제 성공 후 최신 리스트 재조회
+      await fetchOriginalComments();
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      alert(error.message || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      // 삭제 중 상태 제거
+      setDeletingCommentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
+    }
   };
 
   const handleToggleVisibility = (commentId) => {
@@ -366,9 +410,9 @@ export function VideoDetailTab({ video, onBack }) {
       {/* 1. 영상 정보 + 상단 카드 섹션 */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
         <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-stretch">
+          <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-4 lg:items-stretch">
             {/* 좌측: 썸네일 + 제목/메타 정보 (게시글 카드 느낌) */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-5 lg:gap-6">
               <div className="relative shrink-0 w-full sm:w-auto">
                 <img 
                   src={displayVideo.thumbnailUrl || displayVideo.thumbnail} 
@@ -376,7 +420,7 @@ export function VideoDetailTab({ video, onBack }) {
                   className="w-full sm:w-[140px] sm:h-[100px] md:w-[180px] md:h-[130px] lg:w-[220px] lg:h-[160px] rounded-xl sm:rounded-2xl object-cover shadow-sm"
                 />
               </div>
-              <div className="flex-1 flex flex-col justify-center min-w-0">
+              <div className="flex-1 flex flex-col justify-center min-w-0 sm:ml-2 md:ml-3">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mb-2 line-clamp-2 sm:truncate">
                   {displayVideo.title || '제목 없음'}
                 </h2>
@@ -396,71 +440,42 @@ export function VideoDetailTab({ video, onBack }) {
               </div>
             </div>
 
-            {/* 우측: 영상 날씨 / 총 댓글 / 필터링 된 댓글 / 필터링 비율 카드 (가로 병렬) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {/* 영상 날씨 카드 */}
-              <div className="rounded-xl sm:rounded-2xl bg-gray-50 flex flex-col justify-center items-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
-                {(() => {
-                  const filteringRatio = parseFloat(filteringRate) || 0;
-                  const weatherInfo = getVideoWeatherInfo(filteringRatio);
-                  const WeatherIcon = weatherInfo.icon;
-                  
-                  if (totalComments === 0 || isNaN(filteringRatio)) {
-                    return (
-                      <div className="flex flex-col items-center justify-center gap-1">
-                        <Cloud className="size-6 sm:size-8 text-gray-300" />
-                        <p className="text-[10px] sm:text-xs text-gray-500 text-center">
-                          데이터 없음
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <div className="flex flex-col items-center justify-center gap-1 w-full">
-                      <WeatherIcon className="size-6 sm:size-8" style={{ color: weatherInfo.color }} />
-                      <p className="text-[10px] sm:text-xs text-gray-600 text-center leading-tight">
-                        현재 영상 날씨는 <span className="font-bold" style={{ color: weatherInfo.color }}>{weatherInfo.text}</span>입니다
-                      </p>
-                    </div>
-                  );
-                })()}
-              </div>
-
+            {/* 우측: 총 댓글 / 필터링 된 댓글 / 필터링 비율 카드 (유연한 배치) */}
+            <div className="flex flex-col sm:flex-row lg:flex-col xl:grid xl:grid-cols-3 lg:justify-start gap-2 sm:gap-3">
               {/* 총 댓글 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#F5F5F7] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
-                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-gray-600 mb-0.5 sm:mb-1 font-medium">
-                  <MessageSquare className="size-3 sm:size-4" />
+              <div className="rounded-xl sm:rounded-2xl bg-[#F5F5F7] flex flex-col justify-center px-4 sm:px-5 lg:px-6 py-3 sm:py-4 min-h-[80px] sm:min-h-0 flex-1 sm:flex-initial lg:flex-1 xl:flex-initial sm:min-w-[120px] lg:min-w-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-sm md:text-base text-gray-600 mb-1 sm:mb-1.5 font-medium">
+                  <MessageSquare className="size-4 sm:size-5" />
                   <span className="hidden sm:inline">총 댓글</span>
                   <span className="sm:hidden">댓글</span>
                 </div>
-                <div className="text-sm sm:text-lg md:text-2xl font-bold text-gray-900">
+                <div className="text-base sm:text-xl md:text-3xl font-bold text-gray-900">
                   {Number(totalComments).toLocaleString()}
-                  <span className="ml-1 text-[10px] sm:text-xs md:text-sm font-normal text-gray-400">개</span>
+                  <span className="ml-1 text-[11px] sm:text-sm md:text-base font-normal text-gray-400">개</span>
                 </div>
               </div>
 
               {/* 필터링된 댓글 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#F4F7FF] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
-                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#3756B2] mb-0.5 sm:mb-1 font-medium">
-                  <Shield className="size-3 sm:size-4" />
-                  <span className="hidden sm:inline">필터링 댓글 수 </span>
+              <div className="rounded-xl sm:rounded-2xl bg-[#F4F7FF] flex flex-col justify-center px-4 sm:px-5 lg:px-6 py-3 sm:py-4 min-h-[80px] sm:min-h-0 flex-1 sm:flex-initial lg:flex-1 xl:flex-initial sm:min-w-[120px] lg:min-w-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-sm md:text-base text-[#3756B2] mb-1 sm:mb-1.5 font-medium">
+                  <Shield className="size-4 sm:size-5" />
+                  <span className="hidden sm:inline">필터링 댓글</span>
                   <span className="sm:hidden">필터링</span>
                 </div>
-                <div className="text-sm sm:text-lg md:text-2xl font-bold text-[#1D3A8A]">
+                <div className="text-base sm:text-xl md:text-3xl font-bold text-[#1D3A8A]">
                   {Number(filteredComments).toLocaleString()}
-                  <span className="ml-1 text-[10px] sm:text-xs md:text-sm font-normal text-[#9DB3FF]">개</span>
+                  <span className="ml-1 text-[11px] sm:text-sm md:text-base font-normal text-[#9DB3FF]">개</span>
                 </div>
               </div>
 
               {/* 필터링 비율 */}
-              <div className="rounded-xl sm:rounded-2xl bg-[#FFF5EC] flex flex-col justify-center px-3 sm:px-5 py-2 sm:py-3 min-h-[70px] sm:min-h-0">
-                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm text-[#D97706] mb-0.5 sm:mb-1 font-medium">
-                  <AlertTriangle className="size-3 sm:size-4" />
+              <div className="rounded-xl sm:rounded-2xl bg-[#FFF5EC] flex flex-col justify-center px-4 sm:px-5 lg:px-6 py-3 sm:py-4 min-h-[80px] sm:min-h-0 flex-1 sm:flex-initial lg:flex-1 xl:flex-initial sm:min-w-[120px] lg:min-w-0">
+                <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-sm md:text-base text-[#D97706] mb-1 sm:mb-1.5 font-medium">
+                  <AlertTriangle className="size-4 sm:size-5" />
                   <span className="hidden sm:inline">필터링 비율</span>
                   <span className="sm:hidden">비율</span>
                 </div>
-                <div className="text-sm sm:text-lg md:text-2xl font-bold text-[#B45309]">
+                <div className="text-base sm:text-xl md:text-3xl font-bold text-[#B45309]">
                   {filteringRate}%
                 </div>
               </div>
@@ -469,107 +484,80 @@ export function VideoDetailTab({ video, onBack }) {
         </CardContent>
       </Card>
 
-      {/* 2. 📌 댓글 필터링 추이 그래프 (드롭다운 추가됨) */}
-      <Card className="border-none shadow-sm bg-white">
-        <CardHeader className="pb-2">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 2. 📌 [구현완료] 필터링 추이 그래프 */}
+      <Card className="h-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
+              <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="size-5 text-gray-500" />
                 댓글 필터링 추이
               </CardTitle>
-              <CardDescription className="mt-1">
-                {filterPeriod === 'day' && '최근 7일간 차단된 댓글 현황'}
-                {filterPeriod === 'month' && '최근 30일간 차단된 댓글 현황'}
-                {filterPeriod === 'year' && '최근 1년간 차단된 댓글 현황'}
+              <CardDescription>
+                {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
+                {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
+                {filterPeriod === 'year' && '최근 1년간의 활동입니다'}
               </CardDescription>
             </div>
-
-            {/* 📌 기간 선택 및 범례 */}
-            <div className="flex items-center gap-4">
-              {/* 범례 */}
-              <div className="hidden sm:flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                <span className="text-gray-600 text-xs font-medium">차단됨:</span>
-                <span className="text-gray-900 text-xs font-bold">{lastChartValue.toLocaleString()}개</span>
-              </div>
-
-              {/* 드롭다운 메뉴 */}
-              <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                <SelectTrigger className="w-[130px] h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">일별 (7일)</SelectItem>
-                  <SelectItem value="month">월별 (30일)</SelectItem>
-                  <SelectItem value="year">연도별 (1년)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* 기간 선택 셀렉트 박스 */}
+            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">일별 (7일)</SelectItem>
+                <SelectItem value="month">월별 (30일)</SelectItem>
+                <SelectItem value="year">연도별 (1년)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        
         <CardContent>
-          <div className="h-[350px] w-full mt-4">
-            {isChartLoading ? (
-              <div className="h-full flex items-center justify-center">
-                <Loader2 className="size-6 animate-spin text-gray-400" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData.length > 0 ? chartData : [{ date: '데이터 없음', filtered: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tickMargin={10}
-                    minTickGap={30}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                    axisLine={false} 
-                    tickLine={false} 
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #E5E7EB', 
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                    itemStyle={{ fontSize: '12px', fontWeight: '500' }}
-                    formatter={(value, name) => [
-                      `${Number(value).toLocaleString()}개`,
-                      name
-                    ]}
-                  />
-                  {/* 📌 필터링 댓글 라인 하나만 표시 */}
-                  <Line 
-                    type="monotone" 
-                    dataKey="filtered" 
-                    name="차단된 댓글"
-                    stroke="#EF4444" 
-                    strokeWidth={3} 
-                    dot={{ fill: '#EF4444', r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 6 }}
-                    animationDuration={1000}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    name="총 댓글"
-                    stroke="#94A3B8" 
-                    strokeWidth={2} 
-                    dot={false}
-                    activeDot={{ r: 4 }}
-                    animationDuration={1000}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          {isChartLoading ? (
+            <div className="h-[480px] flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={480}>
+              <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: '#6B7280', fontSize: 12 }} 
+                  axisLine={{ stroke: '#E5E7EB' }} 
+                  minTickGap={30}
+                />
+                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                  formatter={(value, name) => [
+                    `${Number(value).toLocaleString()}건`,
+                    name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
+                  ]}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="filtered" 
+                  stroke="#4F9DDE" 
+                  strokeWidth={2}
+                  dot={{ fill: '#4F9DDE', r: 4 }}
+                  activeDot={{ r: 6 }}
+                  name="필터링 댓글" 
+                  animationDuration={1000}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="total" 
+                  stroke="#94A3B8" 
+                  strokeWidth={2}
+                  dot={{ fill: '#94A3B8', r: 4 }}
+                  activeDot={{ r: 6 }}
+                  name="총 댓글" 
+                  animationDuration={1000}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
       {/* 2. 원본 악플 접근 경고 및 목록 */}
@@ -717,9 +705,17 @@ export function VideoDetailTab({ video, onBack }) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                              disabled={deletingCommentIds.has(comment.id)}
+                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              삭제
+                              {deletingCommentIds.has(comment.id) ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  삭제 중...
+                                </>
+                              ) : (
+                                '삭제'
+                              )}
                             </button>
                             <button
                               onClick={() => handleToggleVisibility(comment.id)}

@@ -15,8 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
 import { apiUrl } from '@/lib/config';
 
@@ -74,6 +74,7 @@ export function OverviewTab({ data, channel }) {
   
   // 📌 삭제 확인 다이얼로그 State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // 삭제 중 상태
   
   // 📌 영상별 필터링 통계 State
   const [videoStats, setVideoStats] = useState({}); // { videoId: { totalFilteredCount, totalCommentCount, filteringRatio } }
@@ -357,11 +358,11 @@ export function OverviewTab({ data, channel }) {
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 조회수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}회</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 댓글 수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}개</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                   <span className="text-gray-600 text-sm lg:text-base">총 동영상 수</span>
@@ -464,17 +465,7 @@ export function OverviewTab({ data, channel }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={480}>
-                <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
-                  <defs>
-                    <linearGradient id="colorFiltered" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4F9DDE" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#4F9DDE" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+                <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis 
                     dataKey="name" 
@@ -490,25 +481,27 @@ export function OverviewTab({ data, channel }) {
                       name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
                     ]}
                   />
-                  <Area 
+                  <Line 
                     type="monotone" 
                     dataKey="filtered" 
                     stroke="#4F9DDE" 
                     strokeWidth={2}
-                    fill="url(#colorFiltered)" 
+                    dot={{ fill: '#4F9DDE', r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="필터링 댓글" 
                     animationDuration={1000}
                   />
-                  <Area 
+                  <Line 
                     type="monotone" 
                     dataKey="total" 
                     stroke="#94A3B8" 
                     strokeWidth={2}
-                    fill="url(#colorTotal)" 
+                    dot={{ fill: '#94A3B8', r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="총 댓글" 
                     animationDuration={1000}
                   />
-                </AreaChart>
+                </LineChart>
               </ResponsiveContainer>
             )}
           </CardContent>
@@ -528,7 +521,7 @@ export function OverviewTab({ data, channel }) {
                       return (
                         <span>
                           <span className="font-semibold text-gray-900">{timePatternData.red_zone.time_slot}</span>에 
-                          전체 악플의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다.
+                          전체 악플의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다
                         </span>
                       );
                     }
@@ -593,7 +586,10 @@ export function OverviewTab({ data, channel }) {
       {/* 3. 민심 온도계 및 영상 목록 (기존 유지) */}
       <Card>
         <CardHeader>
-          <CardTitle>영상 목록</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <List className="size-5 text-gray-500" />
+            영상 목록
+          </CardTitle>
           <CardDescription>현재 채널에 등록된 최신 20개 영상 별 댓글 현황(날씨)을 확인할 수 있습니다. 영상 클릭 시 영상 대시보드로 이동합니다</CardDescription>
           
         </CardHeader>
@@ -707,31 +703,81 @@ export function OverviewTab({ data, channel }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>필터링 된 댓글을 삭제하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 pt-2">
-              <p>
+            <div className="text-sm text-muted-foreground space-y-3 pt-2">
+              <div>
                 이 채널에서 필터링 된 총{' '}
                 <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 YouTube에서 영구적으로 삭제됩니다
-              </p>
-              <p className="font-semibold text-gray-900">
+              </div>
+              <div className="font-semibold text-gray-900">
                 삭제된 댓글은 복원할 수 없습니다
-              </p>
-              <p className="text-sm text-gray-600">
+              </div>
+              <div className="text-sm text-gray-600">
                 댓글을 검토하거나 개별로 삭제하고 싶다면, 영상 대시보드에서 해당 댓글을 확인하실 수 있습니다
-              </p>
-            </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                // TODO: 실제 삭제 API 호출
-                console.log('필터링 된 댓글 삭제 확인');
-                alert('삭제 기능은 추후 구현 예정입니다.');
-                setShowDeleteDialog(false);
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!channel?.id) {
+                  alert('채널 정보를 찾을 수 없습니다.');
+                  return;
+                }
+
+                setIsDeleting(true);
+                try {
+                  const response = await fetch(
+                    apiUrl(`api/youtube/comments/channel/${channel.id}/filtered`),
+                    {
+                      method: 'DELETE',
+                      credentials: 'include',
+                    }
+                  );
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `댓글 삭제 실패: ${response.status}`);
+                  }
+
+                  const result = await response.json();
+                  const successCount = result.successCount || 0;
+                  const failureCount = result.failureCount || 0;
+                  const totalRequested = result.totalRequested || 0;
+
+                  // 성공 메시지 표시
+                  if (failureCount === 0) {
+                    alert(`성공적으로 ${successCount.toLocaleString()}개의 댓글이 삭제되었습니다.`);
+                  } else {
+                    alert(
+                      `삭제 완료: ${successCount.toLocaleString()}개 성공, ${failureCount}개 실패\n` +
+                      `(최대 500개까지만 한 번에 삭제됩니다. 나머지는 개별 삭제하거나 다시 시도해주세요.)`
+                    );
+                  }
+
+                  // 다이얼로그 닫기
+                  setShowDeleteDialog(false);
+                  
+                  // 페이지 새로고침하여 최신 데이터 반영 (선택사항)
+                  // window.location.reload();
+                } catch (error) {
+                  console.error('댓글 삭제 실패:', error);
+                  alert(error.message || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                } finally {
+                  setIsDeleting(false);
+                }
               }}
             >
-              삭제하기
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  삭제 중...
+                </>
+              ) : (
+                '삭제하기'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
