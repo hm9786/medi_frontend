@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
 import { apiUrl } from '@/lib/config';
 
@@ -464,17 +464,7 @@ export function OverviewTab({ data, channel }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={480}>
-                <AreaChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
-                  <defs>
-                    <linearGradient id="colorFiltered" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4F9DDE" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#4F9DDE" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+                <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis 
                     dataKey="name" 
@@ -490,25 +480,27 @@ export function OverviewTab({ data, channel }) {
                       name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
                     ]}
                   />
-                  <Area 
+                  <Line 
                     type="monotone" 
                     dataKey="filtered" 
                     stroke="#4F9DDE" 
                     strokeWidth={2}
-                    fill="url(#colorFiltered)" 
+                    dot={{ fill: '#4F9DDE', r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="필터링 댓글" 
                     animationDuration={1000}
                   />
-                  <Area 
+                  <Line 
                     type="monotone" 
                     dataKey="total" 
                     stroke="#94A3B8" 
                     strokeWidth={2}
-                    fill="url(#colorTotal)" 
+                    dot={{ fill: '#94A3B8', r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="총 댓글" 
                     animationDuration={1000}
                   />
-                </AreaChart>
+                </LineChart>
               </ResponsiveContainer>
             )}
           </CardContent>
@@ -710,18 +702,18 @@ export function OverviewTab({ data, channel }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>필터링 된 댓글을 삭제하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 pt-2">
-              <p>
+            <div className="text-sm text-muted-foreground space-y-3 pt-2">
+              <div>
                 이 채널에서 필터링 된 총{' '}
                 <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 YouTube에서 영구적으로 삭제됩니다
-              </p>
-              <p className="font-semibold text-gray-900">
+              </div>
+              <div className="font-semibold text-gray-900">
                 삭제된 댓글은 복원할 수 없습니다
-              </p>
-              <p className="text-sm text-gray-600">
+              </div>
+              <div className="text-sm text-gray-600">
                 댓글을 검토하거나 개별로 삭제하고 싶다면, 영상 대시보드에서 해당 댓글을 확인하실 수 있습니다
-              </p>
-            </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
