@@ -146,6 +146,10 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 8,
     fontWeight: 600,
   },
+  badgeText: {
+    fontSize: 8,
+    fontWeight: 600,
+  },
   listItem: {
     flexDirection: "row",
     marginBottom: 4,

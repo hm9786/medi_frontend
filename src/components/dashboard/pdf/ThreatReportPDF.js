@@ -84,7 +84,7 @@ export const ThreatReportPDF = ({ reportData }) => {
           }
           col2={
             <PDFStatCard
-              label="위험"
+              label="심각"
               value={section1.intensity_distribution.critical}
               unit="건"
               color="red"
@@ -137,17 +137,12 @@ export const ThreatReportPDF = ({ reportData }) => {
           {section1.repeat_offenders.offenders.map((offender, idx) => (
             <View key={idx} style={pdfStyles.offenderCard}>
               <View style={pdfStyles.offenderHeader}>
-                <View style={pdfStyles.offenderAvatar}>
-                  <Text style={pdfStyles.offenderAvatarText}>
-                    {offender.author_name.charAt(1)}
-                  </Text>
-                </View>
                 <View style={pdfStyles.offenderInfo}>
                   <Text style={pdfStyles.offenderName}>
                     {offender.author_name}
                   </Text>
                   <Text style={pdfStyles.offenderAttacks}>
-                    [경고] {offender.total_attacks}회 공격 감지
+                    [경고] {offender.total_attacks}건 공격 감지
                   </Text>
                 </View>
               </View>
@@ -157,7 +152,7 @@ export const ThreatReportPDF = ({ reportData }) => {
                     count > 0 && (
                       <PDFBadge
                         key={cat}
-                        text={`${cat} ${count}`}
+                        text={`${cat} ${count}건`}
                         variant="gray"
                         style={pdfStyles.offenderTag}
                       />

@@ -677,7 +677,7 @@ export function BadCommentsTab({ data }) {
             </CardContent>
           </Card>
 
-          {/* 위험(크리티컬) */}
+          {/* 심각(크리티컬) */}
           <Card className="shadow-sm border-slate-200">
             <CardContent className="px-6 py-4 md:py-5">
               <div className="flex items-center gap-3">
@@ -685,7 +685,7 @@ export function BadCommentsTab({ data }) {
                   <TriangleAlert className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">위험</p>
+                  <p className="text-xs text-slate-500">심각</p>
                   <p className="text-xl md:text-2xl font-extrabold text-rose-500 leading-tight">
                     {section1.intensity_distribution.critical}
                     <span className="text-sm font-semibold ml-0.5">건</span>
@@ -734,25 +734,27 @@ export function BadCommentsTab({ data }) {
                   </p>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-4">
-                  <div className="flex flex-wrap gap-2 text-xs md:text-sm flex-1 min-w-0">
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                  <div className="flex flex-col md:flex-row gap-2 text-xs md:text-sm md:flex-1 md:min-w-0">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 whitespace-nowrap">
                       <span className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
-                      위험 레벨 <span className="ml-1 font-semibold">높음</span>
+                      위험 레벨: <span className="ml-1 font-semibold">높음</span>
                     </div>
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 whitespace-nowrap">
                       <span className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
                       위험 시간: <span className="ml-1 font-semibold">새벽</span>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap flex-shrink-0"
-                  >
-                    상세 보기
-                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
+                  <div className="flex justify-end md:block">
+                    <button
+                      type="button"
+                      className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap"
+                    >
+                      상세 보기
+                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -776,16 +778,16 @@ export function BadCommentsTab({ data }) {
                   </p>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-4">
-                  <div className="flex flex-wrap gap-2 text-xs md:text-sm flex-1 min-w-0">
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border">
+                <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                  <div className="flex flex-col md:flex-row gap-2 text-xs md:text-sm md:flex-1 md:min-w-0">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border whitespace-nowrap">
                       권장 건수{" "}
                       <span className="ml-1 font-semibold text-slate-900">
                         5건
                       </span>
                     </div>
                     
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border whitespace-nowrap">
                       주의 건수{" "}
                       <span className="ml-1 font-semibold text-slate-900">
                         6건
@@ -793,13 +795,15 @@ export function BadCommentsTab({ data }) {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap flex-shrink-0"
-                  >
-                    상세 보기
-                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
+                  <div className="flex justify-end md:block">
+                    <button
+                      type="button"
+                      className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap"
+                    >
+                      상세 보기
+                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -894,7 +898,7 @@ export function BadCommentsTab({ data }) {
                         </ResponsiveContainer>
                       </div>
                       <div className="text-center mt-2">
-                        <span className="text-3xl font-extrabold text-gray-900">{reportData.total_comments}건</span>
+                        <span className="text-3xl font-extrabold text-gray-900">총 {reportData.total_comments}건</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -941,13 +945,10 @@ export function BadCommentsTab({ data }) {
                       {section1.repeat_offenders.offenders.map((offender, idx) => (
                         <div key={idx} className="bg-white border rounded-xl p-4 shadow-sm">
                           <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="size-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 font-bold">
-                                {offender.author_name.charAt(1)}
-                              </div>
+                            <div className="flex items-center gap-3">    
                               <div>
                                 <h4 className="font-bold text-gray-900">{offender.author_name}</h4>
-                                <p className="text-xs text-red-500 font-medium">⚠️ {offender.total_attacks}회 공격 감지</p>
+                                <p className="text-xs text-red-500 font-medium">⚠️ {offender.total_attacks}건 악플 감지</p>
                               </div>
                             </div>
                           </div>
@@ -1095,7 +1096,7 @@ export function BadCommentsTab({ data }) {
                             <div className="flex items-center justify-between gap-4">
                               {/* 왼쪽: 썸네일 + 순위 배지 */}
                               <div className="flex items-center gap-3">
-                                <div className="relative w-[96px] h-[54px] rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                <div className="relative w-[156px] h-[88px] rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                                   {/* 썸네일 이미지 (비율 고정) */}
                                   <img
                                     src={video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg"}
@@ -1115,8 +1116,8 @@ export function BadCommentsTab({ data }) {
                               </div>
 
                               {/* 중앙: 제목 + 악플 개수 */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1.5">
+                              <div className="flex-1 min-w-0 ml-2">
+                                <h4 className="text-base font-bold text-gray-900 line-clamp-1 mb-1.5">
                                   {video.video_title}
                                 </h4>
                                 <div className="flex items-center gap-2 text-xs">

@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
 import { apiUrl } from '@/lib/config';
@@ -593,7 +593,10 @@ export function OverviewTab({ data, channel }) {
       {/* 3. 민심 온도계 및 영상 목록 (기존 유지) */}
       <Card>
         <CardHeader>
-          <CardTitle>영상 목록</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <List className="size-5 text-gray-500" />
+            영상 목록
+          </CardTitle>
           <CardDescription>현재 채널에 등록된 최신 20개 영상 별 댓글 현황(날씨)을 확인할 수 있습니다. 영상 클릭 시 영상 대시보드로 이동합니다</CardDescription>
           
         </CardHeader>

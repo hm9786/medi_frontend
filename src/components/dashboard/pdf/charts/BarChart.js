@@ -35,90 +35,106 @@ export const BarChart = ({
       )}
 
       {/* 차트 */}
-      <Svg width={width} height={height}>
-        {/* Y축 그리드 라인 */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = 20 + chartHeight * (1 - ratio);
-          return (
-            <Line
-              key={ratio}
-              x1={60}
-              y1={y}
-              x2={width - 20}
-              y2={y}
-              stroke="#E5E7EB"
-              strokeWidth={0.5}
-            />
-          );
-        })}
-
-        {/* 막대 그래프 */}
-        {normalizedData.map((item, index) => {
-          const barHeight = (item.normalizedValue / maxValue) * chartHeight;
-          const x = 60 + spacing + index * (barWidth + spacing);
-          const y = 20 + chartHeight - barHeight;
-          const isRed = item.isRedZone;
-
-          return (
-            <G key={index}>
-              <Rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                fill={isRed ? "#EF4444" : "#E5E7EB"}
-                rx={4}
+      <View style={{ position: "relative" }}>
+        <Svg width={width} height={height}>
+          {/* Y축 그리드 라인 */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = 20 + chartHeight * (1 - ratio);
+            return (
+              <Line
+                key={ratio}
+                x1={60}
+                y1={y}
+                x2={width - 20}
+                y2={y}
+                stroke="#E5E7EB"
+                strokeWidth={0.5}
               />
-              {/* 값 표시 */}
-              {item.normalizedValue > 0 && (
-                <Text
-                  x={x + barWidth / 2}
-                  y={y - 8}
-                  style={{
-                    fontSize: 10,
-                    fill: "#374151",
-                    textAnchor: "middle",
-                  }}
-                >
-                  {item.count}
-                </Text>
-              )}
-              {/* 라벨 */}
+            );
+          })}
+
+          {/* 막대 그래프 */}
+          {normalizedData.map((item, index) => {
+            const barHeight = (item.normalizedValue / maxValue) * chartHeight;
+            const x = 60 + spacing + index * (barWidth + spacing);
+            const y = 20 + chartHeight - barHeight;
+            const isRed = item.isRedZone;
+
+            return (
+              <G key={index}>
+                <Rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  fill={isRed ? "#EF4444" : "#E5E7EB"}
+                  rx={4}
+                />
+                {/* 값 표시 */}
+                {item.normalizedValue > 0 && (
+                  <Text
+                    x={x + barWidth / 2}
+                    y={y - 8}
+                    style={{
+                      fontSize: 10,
+                      fill: "#374151",
+                      textAnchor: "middle",
+                    }}
+                  >
+                    {item.count}
+                  </Text>
+                )}
+              </G>
+            );
+          })}
+
+          {/* Y축 라벨 */}
+          {[0, 0.5, 1].map((ratio) => {
+            const value = Math.round(maxValue * ratio);
+            const y = 20 + chartHeight * (1 - ratio);
+            return (
               <Text
-                x={x + barWidth / 2}
-                y={height - 15}
+                key={ratio}
+                x={55}
+                y={y + 3}
                 style={{
                   fontSize: 9,
                   fill: "#6B7280",
-                  textAnchor: "middle",
+                  textAnchor: "end",
                 }}
               >
-                {item.name?.split(" ")[0] || item.name}
+                {value}
               </Text>
-            </G>
-          );
-        })}
-
-        {/* Y축 라벨 */}
-        {[0, 0.5, 1].map((ratio) => {
-          const value = Math.round(maxValue * ratio);
-          const y = 20 + chartHeight * (1 - ratio);
-          return (
-            <Text
-              key={ratio}
-              x={55}
-              y={y + 3}
-              style={{
-                fontSize: 9,
-                fill: "#6B7280",
-                textAnchor: "end",
-              }}
-            >
-              {value}
-            </Text>
-          );
-        })}
-      </Svg>
+            );
+          })}
+        </Svg>
+        
+        {/* X축 레이블 (한글 지원) */}
+        <View style={{ flexDirection: "row", marginTop: -20, paddingLeft: 60 + spacing }}>
+          {normalizedData.map((item, index) => {
+            return (
+              <View
+                key={index}
+                style={{
+                  width: barWidth,
+                  marginLeft: index === 0 ? 0 : spacing,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 9,
+                    color: "#6B7280",
+                    textAlign: "center",
+                  }}
+                >
+                  {item.name?.split(" ")[0] || item.name}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
     </View>
   );
 };
