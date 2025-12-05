@@ -74,6 +74,7 @@ export function OverviewTab({ data, channel }) {
   
   // 📌 삭제 확인 다이얼로그 State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // 삭제 중 상태
   
   // 📌 영상별 필터링 통계 State
   const [videoStats, setVideoStats] = useState({}); // { videoId: { totalFilteredCount, totalCommentCount, filteringRatio } }
@@ -357,11 +358,11 @@ export function OverviewTab({ data, channel }) {
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 조회수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}회</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 댓글 수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}개</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                   <span className="text-gray-600 text-sm lg:text-base">총 동영상 수</span>
@@ -520,7 +521,7 @@ export function OverviewTab({ data, channel }) {
                       return (
                         <span>
                           <span className="font-semibold text-gray-900">{timePatternData.red_zone.time_slot}</span>에 
-                          전체 악플의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다.
+                          전체 악플의 <span className="font-semibold text-red-600">{timePatternData.red_zone.percentage}%</span>가 집중되었습니다
                         </span>
                       );
                     }
@@ -719,14 +720,64 @@ export function OverviewTab({ data, channel }) {
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                // TODO: 실제 삭제 API 호출
-                console.log('필터링 된 댓글 삭제 확인');
-                alert('삭제 기능은 추후 구현 예정입니다.');
-                setShowDeleteDialog(false);
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!channel?.id) {
+                  alert('채널 정보를 찾을 수 없습니다.');
+                  return;
+                }
+
+                setIsDeleting(true);
+                try {
+                  const response = await fetch(
+                    apiUrl(`api/youtube/comments/channel/${channel.id}/filtered`),
+                    {
+                      method: 'DELETE',
+                      credentials: 'include',
+                    }
+                  );
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `댓글 삭제 실패: ${response.status}`);
+                  }
+
+                  const result = await response.json();
+                  const successCount = result.successCount || 0;
+                  const failureCount = result.failureCount || 0;
+                  const totalRequested = result.totalRequested || 0;
+
+                  // 성공 메시지 표시
+                  if (failureCount === 0) {
+                    alert(`성공적으로 ${successCount.toLocaleString()}개의 댓글이 삭제되었습니다.`);
+                  } else {
+                    alert(
+                      `삭제 완료: ${successCount.toLocaleString()}개 성공, ${failureCount}개 실패\n` +
+                      `(최대 500개까지만 한 번에 삭제됩니다. 나머지는 개별 삭제하거나 다시 시도해주세요.)`
+                    );
+                  }
+
+                  // 다이얼로그 닫기
+                  setShowDeleteDialog(false);
+                  
+                  // 페이지 새로고침하여 최신 데이터 반영 (선택사항)
+                  // window.location.reload();
+                } catch (error) {
+                  console.error('댓글 삭제 실패:', error);
+                  alert(error.message || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                } finally {
+                  setIsDeleting(false);
+                }
               }}
             >
-              삭제하기
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  삭제 중...
+                </>
+              ) : (
+                '삭제하기'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -980,7 +980,7 @@ export function BadCommentsTab({ data }) {
                         <TrendingUp className="size-5 text-red-600 mt-0.5 shrink-0" />
                         <div className="text-sm">
                           <span className="font-bold text-gray-900">{section1.time_patterns.red_zone.time_slot}</span>에 
-                          전체 악플의 <span className="font-bold text-red-600">{section1.time_patterns.red_zone.percentage}%</span>가 집중되었습니다.
+                          전체 악플의 <span className="font-bold text-red-600">{section1.time_patterns.red_zone.percentage}%</span>가 집중되었습니다
                         </div>
                       </div>
 

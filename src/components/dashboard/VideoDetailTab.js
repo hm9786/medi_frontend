@@ -28,6 +28,7 @@ export function VideoDetailTab({ video, onBack }) {
   const [visibleOriginalComments, setVisibleOriginalComments] = useState(() => new Set());
   const [sortBy, setSortBy] = useState('date');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [deletingCommentIds, setDeletingCommentIds] = useState(() => new Set()); // 삭제 중인 댓글 ID 추적
   const sortDropdownRef = useRef(null);
   const topRef = useRef(null); // 최상단 요소 참조
 
@@ -215,13 +216,17 @@ export function VideoDetailTab({ video, onBack }) {
           : payload?.data || [];
 
       const normalized = rawList
-        .map((item, index) => ({
-          id: item.id || item.commentId || item.youtubeCommentId || `comment-${index}`,
-          author: item.author || item.authorName || item.authorDisplayName || '익명',
-          content: item.content || item.text || item.textOriginal || item.text_original || '',
-          publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
-          likes: Number(item.likeCount ?? item.likes ?? item.like ?? 0) || 0,
-        }))
+        .map((item, index) => {
+          const youtubeCommentId = item.youtubeCommentId || item.id || item.commentId || `comment-${index}`;
+          return {
+            id: youtubeCommentId, // id로 youtubeCommentId 사용
+            youtubeCommentId: youtubeCommentId, // 원본 youtubeCommentId도 보존
+            author: item.author || item.authorName || item.authorDisplayName || item.commenterName || '익명',
+            content: item.content || item.text || item.textOriginal || item.text_original || item.commentText || '',
+            publishedAt: item.publishedAt || item.createdAt || item.created_at || item.date,
+            likes: Number(item.likeCount ?? item.likes ?? item.like ?? 0) || 0,
+          };
+        })
         .filter((comment) => comment.content?.trim());
 
       setOriginalComments(normalized);
@@ -271,9 +276,48 @@ export function VideoDetailTab({ video, onBack }) {
     // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
   };
 
-  const handleDeleteComment = (commentId) => {
-    // TODO: 백엔드 연동 시 실제 삭제 API 호출로 교체
-    console.warn('삭제 버튼 클릭됨 (UI 전용):', commentId);
+  const handleDeleteComment = async (commentId) => {
+    // 삭제 확인
+    if (!window.confirm('이 댓글을 삭제하시겠습니까?\n삭제된 댓글은 복원할 수 없습니다.')) {
+      return;
+    }
+
+    // commentId가 실제 youtubeCommentId인지 확인
+    // fetchOriginalComments에서 youtubeCommentId를 id로 매핑했으므로 commentId가 youtubeCommentId
+    // 하지만 더 안전하게 하기 위해 원본 댓글 객체에서 youtubeCommentId를 찾아봅니다
+    const comment = originalComments.find(c => c.id === commentId);
+    const youtubeCommentId = comment?.youtubeCommentId || commentId;
+
+    // 삭제 중 상태 추가
+    setDeletingCommentIds((prev) => new Set(prev).add(commentId));
+
+    try {
+      const response = await fetch(
+        apiUrl(`api/youtube/comments/${youtubeCommentId}`),
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `댓글 삭제 실패: ${response.status}`);
+      }
+
+      // 삭제 성공 후 최신 리스트 재조회
+      await fetchOriginalComments();
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      alert(error.message || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      // 삭제 중 상태 제거
+      setDeletingCommentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commentId);
+        return next;
+      });
+    }
   };
 
   const handleToggleVisibility = (commentId) => {
@@ -661,9 +705,17 @@ export function VideoDetailTab({ video, onBack }) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                              disabled={deletingCommentIds.has(comment.id)}
+                              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              삭제
+                              {deletingCommentIds.has(comment.id) ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  삭제 중...
+                                </>
+                              ) : (
+                                '삭제'
+                              )}
                             </button>
                             <button
                               onClick={() => handleToggleVisibility(comment.id)}

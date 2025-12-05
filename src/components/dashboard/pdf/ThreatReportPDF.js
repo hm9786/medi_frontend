@@ -168,7 +168,7 @@ export const ThreatReportPDF = ({ reportData }) => {
       <Page size="A4" style={pdfStyles.page}>
         <PDFSection title="악플 집중 시간대">
           <PDFAlertBox
-            message={`${section1.time_patterns.red_zone.time_slot}에 전체 악플의 ${section1.time_patterns.red_zone.percentage}%가 집중되었습니다.`}
+            message={`${section1.time_patterns.red_zone.time_slot}에 전체 악플의 ${section1.time_patterns.red_zone.percentage}%가 집중되었습니다`}
             variant="red"
           />
 
