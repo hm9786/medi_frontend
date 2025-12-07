@@ -37,24 +37,28 @@ function HighlightText({ children }) {
 // 하드코딩된 보고서 데이터 (백엔드 연동 전 임시 데이터)
 const initialReportData = {
   "channel_name": "서빈감각",
-  "generated_at": "2025-11-28T17:35:22.773177",
-  "total_comments": 34,
+  "generated_at": "2025-12-06T22:00:10.236107",
+  "total_comments": 57,
+  "statistics_summary": {
+    "total_filtered": 57,
+    "repeat_offenders_count": 2
+  },
   "section_1_threat_intelligence": {
     "section_title": "🔍 위협 인텔리전스",
-    "generated_at": "2025-11-28T17:33:39.826850",
+    "generated_at": "2025-12-06T21:58:42.199940",
     "repeat_offenders": {
       "top3_categories": [
         {
-          "category": "인신공격",
-          "description": "크리에이터·댓글작성자 개인의 외모·품성·능력 등을 모욕하거나 비하하는 직접적 개인 공격성 발언이 다수 존재함"
+          "category": "인신공격/외모비하",
+          "description": "특정 크리에이터를 직접 겨냥한 욕설·모욕, 외모·능력·정체성 등을 폄하하는 표적화된 공격이 대다수입니다."
         },
         {
-          "category": "성별 비하",
-          "description": "여성(또는 특정 성별)을 대상으로 한 일반화·모욕·혐오 표현(페미 비하, 결혼 강요 등)이 빈번하게 나타남"
+          "category": "성적 대상화/성희롱",
+          "description": "성적 제안·희롱·노골적 성적 표현(섹드립)으로 대상에게 수치심이나 피해를 주는 발언이 다수 존재합니다."
         },
         {
-          "category": "성적 대상화",
-          "description": "노골적 성적 표현·성희롱·미성년자 성적 대상화 등 플랫폼 규정상 절대 허용 불가한 성적 발언이 반복됨"
+          "category": "성별 비하/여성혐오",
+          "description": "여성(혹은 특정 성별)을 일반화·경멸하는 표현과 혐오적 비하가 반복적으로 나타납니다."
         }
       ],
       "offenders": [
@@ -62,151 +66,167 @@ const initialReportData = {
           "author_name": "@석-b7e",
           "total_attacks": 3,
           "category_distribution": {
-            "인신공격": 1,
-            "성별 비하": 2,
-            "성적 대상화": 0
+            "인신공격/외모비하": 3,
+            "성적 대상화/성희롱": 0,
+            "성별 비하/여성혐오": 2
           }
         },
         {
-          "author_name": "@chaosytk77",
+          "author_name": "@JAYJAY-em6mz",
           "total_attacks": 2,
           "category_distribution": {
-            "인신공격": 2,
-            "성별 비하": 0,
-            "성적 대상화": 0
+            "인신공격/외모비하": 1,
+            "성적 대상화/성희롱": 0,
+            "성별 비하/여성혐오": 1
           }
         }
-      ]
+      ],
+      "status": "발견됨"
     },
     "intensity_distribution": {
-      "critical": 19,
-      "high": 15,
-      "total": 34
+      "critical": 11,
+      "high": 46,
+      "total": 57
     },
     "time_patterns": {
       "distribution": {
-        "새벽 (00-06시)": 12,
-        "오전 (06-12시)": 4,
-        "오후 (12-18시)": 12,
+        "새벽 (00-06시)": 17,
+        "오전 (06-12시)": 20,
+        "오후 (12-18시)": 15,
         "저녁 (18-22시)": 3,
-        "심야 (22-24시)": 3
+        "심야 (22-24시)": 2
       },
       "red_zone": {
-        "time_slot": "새벽 (00-06시)",
-        "count": 12,
-        "percentage": 35.3
+        "time_slot": "오전 (06-12시)",
+        "count": 20,
+        "percentage": 35.1
       }
     }
   },
   "section_2_defense_strategy": {
     "section_title": "🛡️ 콘텐츠 방어 전략",
-    "generated_at": "2025-11-28T17:34:05.504607",
+    "generated_at": "2025-12-06T22:00:10.236107",
     "top3_attacked_videos": [
       {
-        "video_id": "lCZUOdpVpPg",
-        "video_title": "여자들이 대화할수록 만나고 싶어지는 남자 특징",
-        "image_url": "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
-        "attack_count": 14,
-        "transcript": "스크립트 없음",
+        "video_id": "1psIOlLouP0",
+        "video_title": "한국에서 연애 못하면 일본여자 만나면 될까?",
+        "video_thumbnail": "https://i.ytimg.com/vi/1psIOlLouP0/hqdefault.jpg",
+        "attack_count": 10,
+        "transcript_preview": "스크립트 정보 없음",
         "trigger_analysis": {
           "trigger_points": [
             {
-              "trigger_quote": "명확한 트리거 식별 어려움",
-              "why_problematic": "제공된 자료에 영상의 스크립트(자막)가 없어 영상 속 특정 문장을 직접 인용하거나 확정적으로 지목할 수 없음. 다만 제목('여자들이 대화할수록 만나고 싶어지는 남자 특징')과 악플 내용들을 통해 유추하면, '여성의 호감을 일반화·규정하거나 성적·외모 기준으로 여성/남성을 평가·대상화하는 조언'이 분노의 촉발 요인일 가능성이 높음. 또한 영상에서 특정 개인(크리에이터)의 외모·성적 경험·성향 등을 언급했을 경우 개인·집단 공격을 유발했을 것으로 보임.",
-              "comment_reaction": "샘플 악플들은 공통적으로 (1) 크리에이터/화자의 외모·성형을 비하('성형티', '콧구멍')하는 인신공격, (2) 여성 집단을 일반화·모욕하거나 성적 대상화(노골적 성적 표현 포함), (3) 폭력·협박적 표현, (4) 영상 내용이 현실과 동떨어졌다는 비판('이딴 거 보면서 여자 못 만난다') 및 조언 거부 반응을 보임. 즉, 영상의 조언이 성적·외모 중심적이거나 여성의 행동을 규정하는 톤이라면 이런 유형의 반응을 촉발했음."
+              "trigger_quote": "[추정] \"한국에서 연애 못하면 일본여자 만나면 되지\"",
+              "why_problematic": "특정 국적·성별(일본여자 vs 한국여자)을 단순 비교해 일본여성을 대체 가능하고 더 호의적인 대상으로 일반화하는 발언입니다. 여성들을 '해결책'으로 소비하고 한국 여성에 대해 깎아내리는 서술은 성차별적·국적차별적 고정관념을 조장하고 대상 집단의 자존감과 정체성에 대한 공격으로 인식됩니다.",
+              "comment_reaction": "크리에이터 능력·인격 공격('이분 잘 모르시네', '퇴물'), 집단 비방(한국여자 비하), '가스라이팅'·'정신병' 같은 강한 표현으로 분노·혐오 표출."
+            },
+            {
+              "trigger_quote": "[추정] \"일본여자들은 리액션이 좋고 작은 것에도 고마워할 줄 알아서 한국 남자한테 더 잘 맞는다\"",
+              "why_problematic": "일본 여성의 성격을 단일하고 수동적인 특성으로 환원하고, 한국 여성은 까다롭다는 식의 비교는 성별·국적에 대한 고정관념과 성적 대상화로 이어집니다. 또한 '한국 남자'의 문제를 타국 여성과의 관계 해결로 제시하는 방식은 책임전가·편견을 부추깁니다.",
+              "comment_reaction": "일부는 내용의 사실성·전문성 부족을 지적('잘 모르는 내용을 주워들었다'), 일부는 집단·개인에 대한 모욕(연령·외모·정신 상태 비하), 가스라이팅·정신승리 비난 등 감정적 반발."
             }
           ],
-          "overall_assessment": "스크립트가 없어 특정 문장 자체를 지목하긴 불가능하나, 제목과 악플 패턴으로 볼 때 '여성의 감정이나 매력을 단편적으로 규정하거나 성적/외모 관점으로 대상화하는 내용'이 주된 트리거로 추정됨. 그 결과 외모 공격, 성적 대상화, 폭력적·모욕적 반응, 영상 신뢰성에 대한 반발이 혼재한 악플이 다수 발생한 것으로 보임."
+          "overall_assessment": "스크립트가 제공되지 않아 발언은 댓글들을 바탕으로 추정했습니다. 댓글 패턴으로 보아 '국적·성별을 단일화해 비교·대체'하는 표현이 핵심 트리거로 작용해 강한 분노와 집단 비하 반응을 유발한 것으로 판단됩니다."
         }
       },
       {
-        "video_id": "bgKZ353pjKM",
-        "video_title": "데이트코스 매번 안 짜오는 남친한테 말 하는 방법",
-        "image_url": "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
-        "attack_count": 6,
-        "transcript": "스크립트 없음",
+        "video_id": "-4M7Wq0em8g",
+        "video_title": "내가 잘생겼는지 예쁜지 궁금할 때 아는 방법",
+        "video_thumbnail": "https://i.ytimg.com/vi/-4M7Wq0em8g/hqdefault.jpg",
+        "attack_count": 8,
+        "transcript_preview": "스크립트 정보 없음",
         "trigger_analysis": {
           "trigger_points": [
             {
               "trigger_quote": "명확한 트리거 식별 어려움",
-              "why_problematic": "제공된 자료에 스크립트(자막)가 없어 영상 내 특정 문장이나 발언을 정확히 인용할 수 없습니다. 다만 영상 제목('데이트코스 매번 안 짜오는 남친한테 말 하는 방법')과 달린 악플 내용을 비교하면, 시청자들은 영상의 조언·태도(특히 연애 상황에서 한쪽 성별을 지칭하거나 역할을 규정하는 부분)를 여성비하·일반화로 받아들였을 가능성이 큽니다. 또 '남자/여자는 ~하다' 식의 일반화, 상대를 깎아내리는 표현, 또는 갈등 상황을 부추기는 어조가 있었던 것으로 추정되며, 이런 요소가 화를 불러일으킬 수 있습니다. (단, 이는 스크립트 부재로 인한 해석적 추론임)",
-              "comment_reaction": "악플들은 공통적으로 영상(또는 영상의 화자/대상)을 향한 성별 일반화·모욕, 폭력적 은유·위협, 여성비하와 같은 강한 공격적 반응을 보입니다. 구체적 패턴은: (1) 여성 집단을 비하·일반화(예: '모든 여자가…', '비정상녀'), (2) 개인/시청자를 모욕(예: '븅신'), (3) 폭력적 은유·위협성 표현(예: '밟혀봐야 정신차리지'), (4) 관계·성(性的) 문제에 대한 적대적 일반화(예: '남자는 몇 번 자고나면 실증난다') 및 (5) 삶/결혼·법적 불이익을 들어 위협·경멸을 표현(예: '이혼할때 재산 반띵')."
+              "why_problematic": "스크립트 원문이 제공되지 않아 특정 발언을 인용할 수 없습니다. 다만 악플 패턴으로 미루어볼 때 영상에서 (1) 출연자 외모나 성형 여부를 직접적으로 언급하거나 확대해서 보여주는 장면(또는 발언), (2) 신체 특정 부위(예: 코)를 비하하거나 조롱할 만한 표현/연출, 혹은 (3) 폭력성 또는 성적·학대 관련한 묘사가 있었을 가능성이 큽니다. 이러한 요소는 개인을 표적화하여 모욕·수치심을 유발하고, 일부 댓글처럼 아동·청소년 연관 성적 서술을 촉발할 경우 플랫폼 안전 정책 위반 민감도를 크게 높입니다.",
+              "comment_reaction": "댓글들은 주로 외모 비하(성형 의혹·못생김·코 비뚤다 등), 인신공격(폭력적이라는 지적 포함), 그리고 한 건은 미성년자 관련 성적 서술을 포함한 고발성 발언으로 나뉩니다. 전반적으로 댓글자들은 영상이나 출연자의 외모/과거에 대해 표적화된 조롱·비난을 즉각적으로 쏟아내며, 일부는 감정적인 분노(조롱·모욕·비하)로 반응하고 있습니다."
             }
           ],
-          "overall_assessment": "스크립트가 제공되지 않아 특정 문장 자체를 정확히 지목하긴 불가능하지만, 영상 주제와 악플 내용을 연결해 보면 시청자들은 영상의 조언 방식이나 성별에 대한 진술을 '일방적·비하적'으로 받아들여 강하게 반응한 것으로 보입니다. 악플들은 주로 성별 일반화·모욕·폭력적 은유라는 공통된 분노 패턴을 보이며, 이는 영상의 표현 방식(어조·대상 지칭)이나 메시지 해석이 문제였을 가능성을 시사합니다."
+          "overall_assessment": "스크립트가 없어 정확한 발언을 특정하기는 어렵습니다. 제공된 악플은 주로 외모·성형 관련 지적과 표적화된 모욕(및 한 건의 아동·청소년 관련 성적 서술)으로 구성되어 있어, 영상 내 외모 언급·노출·논란성 묘사가 분노 유발의 핵심 트리거였을 가능성이 높습니다."
         }
       },
       {
         "video_id": "yaQoGDn64a8",
         "video_title": "나이들수록 주변에 괜찮은사람이 없는 이유",
-        "image_url": "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
-        "attack_count": 3,
-        "transcript": "스크립트 없음",
+        "video_thumbnail": "https://i.ytimg.com/vi/yaQoGDn64a8/hqdefault.jpg",
+        "attack_count": 7,
+        "transcript_preview": "스크립트 정보 없음",
         "trigger_analysis": {
           "trigger_points": [
             {
-              "trigger_quote": "명확한 트리거 식별 어려움",
-              "why_problematic": "제공된 데이터에 영상 스크립트(자막)가 없어 영상 내 특정 발언이나 문장을 직접 인용할 수 없습니다. 따라서 어떤 문구가 분노를 촉발했는지 정확히 식별할 근거가 부족합니다. 다만 악플 내용으로 미루어볼 때 시청자들은 크리에이터의 외모(성형 관련 언급)와 '자기 지식/태도'에 대한 평가(아는 것이 전부인 태도, 잘난 척 등)에 불쾌감을 표출하고 있으며, 이는 영상에서의 말투·표현·태도(예: 단정적·교조적 표현, 타인 비난을 유도하는 일반화) 때문에 촉발되었을 가능성이 있습니다.",
-              "comment_reaction": "악플들은 주로 개인공격(외모비하), 모욕적·성별비하적 표현, 그리고 스팸/홍보로 분류됩니다. 즉 시청자 반응의 패턴은 (1) 외모 지적·비하, (2) 크리에이터의 태도('아는 게 전부', '잘난 척')에 대한 분노 표출, (3) 관련 없는 링크 삽입 등으로 요약됩니다. 그러나 이 패턴이 특정 문장과 직접 연결되는지는 스크립트 부재로 명확히 확인되지 않습니다."
+              "trigger_quote": "결혼했다고 해서 괜찮은 사람이 아님(※댓글에서 유추된 발언)",
+              "why_problematic": "결혼 여부로 사람의 '괜찮음'을 일반화하는 표현으로 특정 집단을 편견적으로 규정합니다. 근거 없는 일반화는 시청자의 공감을 잃게 하고, 대상 집단(기혼자/미혼자)을 불필요하게 폄하하게 됩니다.",
+              "comment_reaction": "시청자들이 '일반화의 오류'를 지적하며 반박(논리적 비판)하는 대신 감정적으로 격앙되어 조롱·모욕(예: '쇼츠.. 결혼했다고 해서 괜찮은 사람이 아님 ㅋㅋ')으로 응수함."
+            },
+            {
+              "trigger_quote": "사람들에게 '하자'가 있다/하자 있는 사람들(※댓글에서 유추된 발언)",
+              "why_problematic": "사람을 '하자'처럼 결함 있는 물건 취급하는 표현은 비하·비인간화로 받아들여질 수 있어 강한 반발을 일으킵니다. 개인의 결점을 일반화·비하하는 어조는 대화의 의도를 넘어 인신공격을 유발합니다.",
+              "comment_reaction": "직접적인 인신공격·조롱(예: '모지라', '너도 참 ...')로 반응하며 감정적 충돌이 확대됨."
+            },
+            {
+              "trigger_quote": "\"뭐 잘생긴 사람은 궁금하지 않아서 클릭하지 않는다\"(※댓글 인용문 추정)",
+              "why_problematic": "특정 외모군을 깎아내리거나 무시하는 듯한 표현은 청중에게 거만하거나 모순적으로 비춰질 수 있습니다. 특히 제작자 외모에 대한 민감도가 높은 플랫폼에서는 발언이 개인 공격으로 확산될 위험이 큽니다.",
+              "comment_reaction": "제작자 외모·성형·탈모 등 개인 신체·외모 공격으로 반응(예: '성형', '탈모' 언급)하며 내용 비판을 넘어선 악플이 다수 발생함."
             }
           ],
-          "overall_assessment": "스크립트가 제공되지 않아 특정 발언을 정확히 지목하기 어렵습니다. 다만 댓글들은 제작자의 외모와 전달 방식(자기 확신·비하적 어조로 비춰졌을 가능성)에 주로 반응하고 있으므로, 영상의 표현 방식(어조·일반화·단정적 주장)이 분노를 유발했을 가능성이 높습니다."
+          "overall_assessment": "댓글들을 종합하면 시청자의 분노는 '집단을 규정·비하하는 일반화 발언'과 '사람을 결함으로 표현하는 모욕적 어조'에서 촉발된 것으로 보입니다. 스크립트가 제공되지 않아 문구는 댓글을 통해 추정한 것이므로, 원문 확인 시 일부 식별은 달라질 수 있습니다."
         }
       }
     ],
     "preventive_guidelines": {
       "do_guidelines": [
         {
-          "guideline": "업로드 시간은 새벽(00-06시)을 피하고 시청자 활동이 많은 시간대로 예약하세요. 추천 시간대: 오전 09:00-12:00, 오후 13:00-16:00, 저녁 18:00-21:00(대상 시청자 타임존 고려).",
-          "reason": "분석에서 악플이 새벽에 집중됨. 활동 시간이 많은 시간대에 게시하면 댓글 유입은 많되 악의적·무작위 공격 비중이 낮아지고 즉각적인 모니터링이 용이합니다.",
-          "expected_impact": "새벽 레드존 노출 감소로 초기 악플 수가 줄고, 건강한 상호작용과 시청자 참여율(좋아요·응답)이 향상됩니다."
+          "guideline": "업로드 시간 조정: 오전 06-12시(레드존)을 피하고 시청자 반응이 보다 온화한 오후·저녁 시간에 게시하거나 예약 업로드를 사용하세요.",
+          "reason": "분석 결과 오전 시간대에 악플·감정적 반응이 집중됩니다. 즉시 노출을 줄이면 초기 악성 댓글 확산을 막을 수 있습니다.",
+          "expected_impact": "초기 악플 발생 빈도 감소, 모더레이션 부담 완화, 커뮤니티 분위기 관리 용이"
         },
         {
-          "guideline": "논쟁적 주제는 중립적·정보형 프레임으로 구성하고 제목·설명에 '개인 의견', '사례 기반' 같은 면책·맥락 문구를 넣으세요. 다양한 관점(예: 전문가 인용, 통계, 사례)을 함께 제공하세요.",
-          "reason": "절대화·일반화된 주장은 특정 집단을 자극해 공격을 촉발하기 쉬움. 맥락과 근거를 제시하면 오해와 분노를 줄일 수 있습니다.",
-          "expected_impact": "공격성 높은 댓글 발생 빈도 감소, 토론의 품질 향상 및 신고·차단 리스크 감소."
+          "guideline": "출시 전 민감도 체크와 내부 검토를 시행하세요: 제목·썸네일·설명에 '국적·나이·성별 일반화' 표현이 없는지 검토하고, 필요시 외부감수자(또는 신뢰할 수 있는 팀원)에게 피드백을 받으세요.",
+          "reason": "'한국에서 연애 못하면 일본여자…', '나이들수록 주변에…'처럼 민감한 주제는 잘못된 표현 하나로 대상화·비하·오해를 유발합니다.",
+          "expected_impact": "오해의 소지 제거로 특정 그룹 대상 공격 감소, 조회수는 유지하면서 부정적 반응 최소화"
         },
         {
-          "guideline": "사전 필터·자동화 도구를 적극 활용하세요: 문제 키워드 블랙리스트, 댓글 사전검토(신규 업로드 6–12시간), 슬로우모드, 신고 감지 자동화, 신뢰할 수 있는 모더레이터 지정.",
-          "reason": "많은 악플은 초기 시간대에 급격히 늘어나며 자동화로 첫 물결을 차단하면 확산을 막을 수 있습니다.",
-          "expected_impact": "노출되는 악성 댓글 수 급감, 커뮤니티 분위기 안정화, 운영자(크리에이터)의 정신적 부담 경감."
+          "guideline": "댓글 중재와 필터링을 강화하세요: 금칙어 자동필터, 신고 우선 처리, '댓글 보류(사전승인)' 옵션, 레드존에 맞춘 모더레이터 근무 스케줄을 적용하세요.",
+          "reason": "악성댓글은 업로드 직후 집중 발생하므로 자동화와 인력 배치가 피해 확산을 막는 핵심입니다.",
+          "expected_impact": "악성 댓글 비공개·삭제 속도 향상, 커뮤니티 규범 유지, 건전한 토론 환경 조성"
         },
         {
-          "guideline": "레드존(00-06시)에 맞춘 모니터링 체계를 만드세요: 이 시간대에 알림·대시보드 집중, 악성 댓글 급증 시 실시간 경고(슬랙/메일/휴대폰 푸시), 가능하면 교대 모더레이터 대기.",
-          "reason": "데이터에서 새벽이 공격 시간대임이 확인되었으므로 이 시간대 집중 대응이 가장 효율적입니다.",
-          "expected_impact": "악플 초기 진압으로 이슈 확산 차단, 빠른 삭제·차단으로 2차 유입 감소, 브랜드·채널 평판 보호."
+          "guideline": "문제 제기는 하되 해결 중심·공감형 어조로 구성하세요: 개인 탓·일반화 대신 사례·데이터·전문가 의견을 인용하고, 보조 설명(예: '개인적 경험입니다', '모든 경우가 아닙니다')을 명시하세요.",
+          "reason": "공격적 표현은 감정적 분노를 촉발해 악플 유입을 늘립니다. 건설적 프레임은 논쟁을 줄이고 대화로 유도합니다.",
+          "expected_impact": "댓글의 질 향상, 개인공격 감소, 긍정적 참여자 비율 증가"
         },
         {
-          "guideline": "제목과 썸네일은 자극적 단정형 표현을 피하고 질문형·정보 제공형으로 바꾸세요. 영상 내·설명란·고정댓글에 커뮤니티 가이드라인과 바람직한 댓글 예시를 명시하세요.",
-          "reason": "자극적 제목·이미지는 의도적 도발을 유발해 악플을 증폭시킴. 초반에 기준을 명확히 제시하면 건전한 댓글 문화를 유도할 수 있습니다.",
-          "expected_impact": "도발성 반응 감소, 신고·차단 필요성 저감, 건설적인 피드백 비율 상승."
+          "guideline": "위기 대응 매뉴얼을 마련하고 고정 공지·핀댓글을 준비하세요: 악플 폭주 시 사용할 표준 응답문구, 신고 절차 안내, 법적·플랫폼 대응 기준을 정리해 팀과 공유하세요.",
+          "reason": "사전 계획이 없으면 초기 대응이 혼선되어 상황이 악화됩니다. 고정 공지로 시청자에게 명확한 규칙을 제시하세요.",
+          "expected_impact": "신속하고 일관된 대응, 브랜드 신뢰 유지, 장기적 피해·법적 리스크 감소"
         }
       ],
       "dont_guidelines": [
         {
-          "guideline": "성별·나이·집단을 일반화하거나 단정하는 표현 사용(예: '여자들이 ~', '나이들수록 ~')을 피하세요.",
-          "reason": "집단을 대상화·일반화하면 해당 집단의 방어적·공격적 반응과 집단 간 갈등을 초래하기 쉽습니다.",
-          "risk_level": "🔴 높음"
+          "guideline": "특정 국가·성별·연령을 일반화하거나 희화화하는 제목·표현을 사용하지 마세요.",
+          "reason": "대상화·스테레오타이핑이 집단적 분노와 혐오성 댓글을 유발하며 플랫폼 제재 대상이 될 수 있습니다.",
+          "risk_level": "🔴높음"
         },
         {
-          "guideline": "비하·조롱·모욕을 유발하는 표현(예: 개인 비난, 조롱적 별칭, '무능하다' 식의 단정적 폄하)을 사용하지 마세요.",
-          "reason": "명백한 공격적 표현은 악플을 정당화시키고 커뮤니티 규정 위반 및 플랫폼 제재로 이어질 수 있습니다.",
-          "risk_level": "🔴 높음"
+          "guideline": "논쟁 유도형 클릭베이트(과도한 자극적 문구·도발적 썸네일)를 사용하지 마세요.",
+          "reason": "클릭률은 오를 수 있으나 트롤과 악성 댓글을 불러와 커뮤니티 질서를 해칩니다.",
+          "risk_level": "🔴높음"
         },
         {
-          "guideline": "확정적·절대적 주장 또는 단편적 사례로 '모두' 또는 '항상'을 단정짓는 클릭베이트형 제목(예: '모두가 틀렸다')을 쓰지 마세요.",
-          "reason": "과장·극단화는 반론을 불러와 분쟁성 댓글과 집단적 공격을 촉발합니다.",
-          "risk_level": "🟠 중간"
+          "guideline": "레드존(오전 06-12시)에 라이브 방송이나 논쟁 유발 콘텐츠를 게시하지 마세요.",
+          "reason": "해당 시간대는 부정적 반응이 집중되는 시간대이므로 관리·대응이 어려워집니다.",
+          "risk_level": "🔴높음"
         },
         {
-          "guideline": "논쟁을 유도하는 직접적 도발형 질문(예: 특정 집단을 겨냥한 '왜 너희는…')이나 상대를 몰아붙이는 레토릭을 피하세요.",
-          "reason": "개인 공격과 감정적 반응을 유발해 토론이 빠르게 악화될 수 있습니다.",
-          "risk_level": "🟠 중간"
+          "guideline": "악플에 감정적으로 대응하거나 공개적으로 논쟁을 심화시키지 마세요 (개인 공격·보복성 댓글 금지).",
+          "reason": "감정적 대응은 상황을 증폭시키고 추가 악성 댓글과 확산을 초래합니다.",
+          "risk_level": "🟠중간"
         },
         {
-          "guideline": "새벽(00-06시)에 자동 업로드하거나 해당 시간대에 라이브 알림·논쟁 유발 공지를 보내지 마세요.",
-          "reason": "분석상 이 시간대에 악플러 활동이 집중되어 있고, 모니터링이 어려워 피해가 커질 가능성이 높습니다.",
-          "risk_level": "🔴 높음"
+          "guideline": "댓글 관리 및 신고 절차를 무시하거나 모더레이션을 해제해 방치하지 마세요.",
+          "reason": "관리 부재는 악성댓글의 자연 증폭을 허용해 채널 이미지와 시청자 안전을 해칩니다.",
+          "risk_level": "🔴높음"
         }
       ]
     }
@@ -453,7 +473,7 @@ export function BadCommentsTab({ data }) {
                     generated_at: defenseSection.generated_at || meta.generatedAt,
                     top3_attacked_videos: (defenseSection.top3_attacked_videos || []).map((video) => ({
                       ...video,
-                      image_url: video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
+                      video_thumbnail: video.video_thumbnail || video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
                     })),
                     preventive_guidelines: defenseSection.preventive_guidelines || {
                       do_guidelines: [],
@@ -622,6 +642,7 @@ export function BadCommentsTab({ data }) {
   }
 
   const section1 = reportData.section_1_threat_intelligence;
+  const section2 = reportData.section_2_defense_strategy;
 
   // 시간대 데이터 변환 (Object -> Array for Chart)
   const timeChartData = Object.entries(section1.time_patterns.distribution).map(([key, value]) => ({
@@ -636,6 +657,29 @@ export function BadCommentsTab({ data }) {
     { name: '심각', value: section1.intensity_distribution.critical, color: '#EF4444' },
     { name: '주의', value: section1.intensity_distribution.high, color: '#F97316' },
   ];
+
+  // 위험 레벨 계산 (critical이 많으면 높음)
+  const getRiskLevel = () => {
+    const critical = section1.intensity_distribution.critical || 0;
+    const high = section1.intensity_distribution.high || 0;
+    const total = critical + high;
+    if (total === 0) return "낮음";
+    const criticalRatio = critical / total;
+    if (criticalRatio >= 0.3) return "매우 높음";
+    if (criticalRatio >= 0.15) return "높음";
+    if (criticalRatio >= 0.05) return "보통";
+    return "낮음";
+  };
+
+  // 위험 시간대 (레드존 시간대에서 앞부분만 추출)
+  const getRiskTime = () => {
+    const redZoneTime = section1.time_patterns.red_zone.time_slot || "";
+    return redZoneTime.split(' ')[0] || "없음"; // "오전 (06-12시)" -> "오전"
+  };
+
+  // 권장 건수 및 주의 건수
+  const doGuidelinesCount = section2?.preventive_guidelines?.do_guidelines?.length || 0;
+  const dontGuidelinesCount = section2?.preventive_guidelines?.dont_guidelines?.length || 0;
 
   return (
     <div className="w-full flex justify-center">
@@ -738,18 +782,18 @@ export function BadCommentsTab({ data }) {
                   <div className="flex flex-col md:flex-row gap-2 text-xs md:text-sm md:flex-1 md:min-w-0">
                     <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 whitespace-nowrap">
                       <span className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
-                      위험 레벨: <span className="ml-1 font-semibold">높음</span>
+                      위험 레벨: <span className="ml-1 font-semibold">{getRiskLevel()}</span>
                     </div>
                     <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 whitespace-nowrap">
                       <span className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
-                      위험 시간: <span className="ml-1 font-semibold">새벽</span>
+                      위험 시간: <span className="ml-1 font-semibold">{getRiskTime()}</span>
                     </div>
                   </div>
 
                   <div className="flex justify-end md:block">
                     <button
                       type="button"
-                      className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap"
+                      className="inline-flex items-center text-xs font-medium text-gray-900 group-hover:text-black whitespace-nowrap"
                     >
                       상세 보기
                       <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
@@ -783,14 +827,14 @@ export function BadCommentsTab({ data }) {
                     <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border whitespace-nowrap">
                       권장 건수{" "}
                       <span className="ml-1 font-semibold text-slate-900">
-                        5건
+                        {doGuidelinesCount}건
                       </span>
                     </div>
                     
                     <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border whitespace-nowrap">
                       주의 건수{" "}
                       <span className="ml-1 font-semibold text-slate-900">
-                        6건
+                        {dontGuidelinesCount}건
                       </span>
                     </div>
                   </div>
@@ -798,7 +842,7 @@ export function BadCommentsTab({ data }) {
                   <div className="flex justify-end md:block">
                     <button
                       type="button"
-                      className="inline-flex items-center text-xs font-medium text-indigo-600 group-hover:text-indigo-700 whitespace-nowrap"
+                      className="inline-flex items-center text-xs font-medium text-gray-900 group-hover:text-black whitespace-nowrap"
                     >
                       상세 보기
                       <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
@@ -1099,7 +1143,7 @@ export function BadCommentsTab({ data }) {
                                 <div className="relative w-[156px] h-[88px] rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                                   {/* 썸네일 이미지 (비율 고정) */}
                                   <img
-                                    src={video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg"}
+                                    src={video.video_thumbnail || video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg"}
                                     alt={video.video_title}
                                     className="w-full h-full object-cover"
                                   />
@@ -1284,9 +1328,9 @@ export function BadCommentsTab({ data }) {
                     <TabsContent value="dont" className="space-y-4">
                       {[...(reportData.section_2_defense_strategy?.preventive_guidelines?.dont_guidelines || [])]
                         .sort((a, b) => {
-                          // 🔴 높음이 먼저, 🟠 중간이 나중
-                          if (a.risk_level === "🔴 높음" && b.risk_level !== "🔴 높음") return -1;
-                          if (a.risk_level !== "🔴 높음" && b.risk_level === "🔴 높음") return 1;
+                          // 🔴높음이 먼저, 🟠중간이 나중
+                          if (a.risk_level === "🔴높음" && b.risk_level !== "🔴높음") return -1;
+                          if (a.risk_level !== "🔴높음" && b.risk_level === "🔴높음") return 1;
                           return 0;
                         })
                         .map((item, idx) => (

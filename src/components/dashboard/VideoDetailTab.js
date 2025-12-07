@@ -131,17 +131,30 @@ export function VideoDetailTab({ video, onBack }) {
       const startDate = new Date();
       
       // 기간 선택 로직
-      if (filterPeriod === 'day') startDate.setDate(endDate.getDate() - 7);
-      else if (filterPeriod === 'month') startDate.setMonth(endDate.getMonth() - 1);
-      else if (filterPeriod === 'year') startDate.setFullYear(endDate.getFullYear() - 1);
+      if (filterPeriod === 'hour') {
+        startDate.setHours(endDate.getHours() - 72); // 최근 72시간 (3일)
+      } else if (filterPeriod === 'day') {
+        startDate.setDate(endDate.getDate() - 7);
+      } else if (filterPeriod === 'month') {
+        startDate.setMonth(endDate.getMonth() - 1);
+      } else if (filterPeriod === 'year') {
+        startDate.setFullYear(endDate.getFullYear() - 1);
+      }
 
-      const to = endDate.toISOString().split('T')[0];
-      const from = startDate.toISOString().split('T')[0];
+      // 시간대별일 때는 날짜+시간 형식, 그 외에는 날짜만
+      const to = filterPeriod === 'hour' 
+        ? endDate.toISOString().slice(0, 16) // 'YYYY-MM-DDTHH:mm'
+        : endDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const from = filterPeriod === 'hour'
+        ? startDate.toISOString().slice(0, 16) // 'YYYY-MM-DDTHH:mm'
+        : startDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
       const periodType =
-        filterPeriod === 'day' ? 'daily' : filterPeriod === 'month' ? 'monthly' : 'yearly';
+        filterPeriod === 'hour' ? 'hourly' :
+        filterPeriod === 'day' ? 'daily' : 
+        filterPeriod === 'month' ? 'monthly' : 'yearly';
 
       try {
-        // 📌 작성 시간(published_at) 기준 통계 API 호출 (특정 영상)
+        // 📌 분석 시간(analyzed_at) 기준 통계 API 호출 (특정 영상)
         const response = await fetch(
           apiUrl(
             `api/v1/analysis/comments/stats?videoId=${video.id}` +
@@ -158,7 +171,6 @@ export function VideoDetailTab({ video, onBack }) {
           const formattedTrend = statsArray.map((item) => ({
             name: item.date,
             filtered: item.filteredCount ?? 0,
-            total: item.totalCount ?? 0,
           }));
           setChartData(formattedTrend);
         }
@@ -173,18 +185,21 @@ export function VideoDetailTab({ video, onBack }) {
     fetchTrendData();
   }, [video, filterPeriod]); // video나 filterPeriod가 바뀌면 실행
 
-  // 3. 원본 악플 데이터 로드 (경고 동의 후, 또는 영상 전환 시 재로드)
+  // 3. 원본 악플 데이터 로드 (경고 동의 전에도 개수 표시를 위해 항상 로드)
   useEffect(() => {
-    if (hasAcknowledgedWarning) {
+    if (video?.id) {
       fetchOriginalComments();
-    } else {
-      // 경고창을 다시 보게 되면 목록도 초기화
-      setOriginalComments([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video?.id]);
+
+  // 경고 동의 상태 변경 시 페이지 초기화
+  useEffect(() => {
+    if (!hasAcknowledgedWarning) {
       setCurrentOriginalPage(0);
       setOriginalError(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video?.id, hasAcknowledgedWarning]);
+  }, [hasAcknowledgedWarning]);
 
   // 페이지 수가 줄었을 때 현재 페이지를 안전하게 조정
   useEffect(() => {
@@ -349,18 +364,6 @@ export function VideoDetailTab({ video, onBack }) {
     return date.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
   };
 
-  // 영상별 날씨 정보 헬퍼 (필터링 댓글 비율 기준)
-  const getVideoWeatherInfo = (filteringRatio) => {
-    if (filteringRatio < 1) {
-      return { icon: Sun, text: '맑음', color: '#FFA500' };
-    } else if (filteringRatio >= 1 && filteringRatio < 5) {
-      return { icon: Cloud, text: '흐림', color: '#9CA3AF' };
-    } else if (filteringRatio >= 5 && filteringRatio < 10) {
-      return { icon: CloudRain, text: '우천', color: '#6366F1' };
-    } else {
-      return { icon: CloudRain, text: '뇌우', color: '#EF4444' };
-    }
-  };
 
   if (isLoading) {
     return (
@@ -494,6 +497,7 @@ export function VideoDetailTab({ video, onBack }) {
                 댓글 필터링 추이
               </CardTitle>
               <CardDescription>
+                {filterPeriod === 'hour' && '최근 72시간(3일)간의 활동입니다 (6시간 단위)'}
                 {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
                 {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
                 {filterPeriod === 'year' && '최근 1년간의 활동입니다'}
@@ -501,10 +505,11 @@ export function VideoDetailTab({ video, onBack }) {
             </div>
             {/* 기간 선택 셀렉트 박스 */}
             <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="hour">시간대별 (72시간)</SelectItem>
                 <SelectItem value="day">일별 (7일)</SelectItem>
                 <SelectItem value="month">월별 (30일)</SelectItem>
                 <SelectItem value="year">연도별 (1년)</SelectItem>
@@ -519,40 +524,44 @@ export function VideoDetailTab({ video, onBack }) {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={480}>
-              <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
+              <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0}]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                 <XAxis 
                   dataKey="name" 
                   tick={{ fill: '#6B7280', fontSize: 12 }} 
                   axisLine={{ stroke: '#E5E7EB' }} 
-                  minTickGap={30}
+                  minTickGap={filterPeriod === 'hour' ? 20 : 30}
+                  tickFormatter={(value) => {
+                    if (filterPeriod === 'hour') {
+                      // "2025-01-15 00:00" → "01/15 00시"
+                      const [date, time] = value.split(' ');
+                      if (date && time) {
+                        const [year, month, day] = date.split('-');
+                        const hour = time.split(':')[0];
+                        return `${month}/${day} ${hour}시`;
+                      }
+                    }
+                    return value;
+                  }}
                 />
-                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
+                <YAxis 
+                  tick={{ fill: '#6B7280', fontSize: 12 }} 
+                  axisLine={{ stroke: '#E5E7EB' }}
+                  label={{ value: '필터링된 댓글 수 (건)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6B7280' } }}
+                  tickFormatter={(value) => Math.round(value).toString()}
+                />
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                  formatter={(value, name) => [
-                    `${Number(value).toLocaleString()}건`,
-                    name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
-                  ]}
+                  formatter={(value) => [`${Number(value).toLocaleString()}건`, '필터링된 댓글']}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="filtered" 
-                  stroke="#4F9DDE" 
-                  strokeWidth={2}
-                  dot={{ fill: '#4F9DDE', r: 4 }}
-                  activeDot={{ r: 6 }}
-                  name="필터링 댓글" 
-                  animationDuration={1000}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="total" 
-                  stroke="#94A3B8" 
-                  strokeWidth={2}
-                  dot={{ fill: '#94A3B8', r: 4 }}
-                  activeDot={{ r: 6 }}
-                  name="총 댓글" 
+                  stroke="#EF4444" 
+                  strokeWidth={3}
+                  dot={{ fill: '#EF4444', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="필터링된 댓글" 
                   animationDuration={1000}
                 />
               </LineChart>
@@ -571,7 +580,7 @@ export function VideoDetailTab({ video, onBack }) {
               <div>
                 <h3 className="text-2xl font-bold text-red-800 mb-2">주의: 원본 악성 댓글 열람 전 안내</h3>
                 <p className="text-red-600 text-sm">
-                  이 영상에서 필터링 된 {originalComments.length.toLocaleString()}개의 악성 댓글이 있습니다
+                  이 영상에서 필터링 된 {sortedOriginalComments.length.toLocaleString()}개의 악성 댓글이 있습니다
                 </p>
               </div>
             </div>
@@ -585,7 +594,15 @@ export function VideoDetailTab({ video, onBack }) {
               <ul className="space-y-2 text-sm text-red-700 pl-1">
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
+                  <span>원본 내용은 블러 처리 되어있습니다. 댓글 내용 열람을 원하시면 보기 버튼을 통해 열람할 수 있습니다</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
                   <span>원본 내용을 열람하면 심리적 충격이 있을 수 있으니 주의하세요</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
+                  <span>삭제 버튼을 통해 유튜브 채널에 등록된 해당 댓글을 삭제할 수 있습니다</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-red-500">•</span>
@@ -617,7 +634,7 @@ export function VideoDetailTab({ video, onBack }) {
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">필터링된 악성 댓글</h3>
                   <p className="text-gray-600 text-sm">
-                    총 {sortedOriginalComments.length.toLocaleString()}개의 댓글이 차단되었습니다.
+                    총 {sortedOriginalComments.length.toLocaleString()}개의 댓글이 필터링 되었습니다
                   </p>
                 </div>
               </div>
