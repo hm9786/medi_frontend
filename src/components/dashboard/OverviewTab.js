@@ -32,7 +32,7 @@ function getWeatherInfo(status) {
 
 // 채널 악플 현황 날씨 정보 헬퍼 (필터링 댓글 비율 기준)
 function getChannelWeatherInfo(filteringRatio) {
-  if (filteringRatio < 1) {
+  if (filteringRatio >= 0 && filteringRatio < 1) {
     return { icon: Sun, text: '맑음', color: '#FFA500' };
   } else if (filteringRatio >= 1 && filteringRatio < 5) {
     return { icon: Cloud, text: '흐림', color: '#9CA3AF' };
@@ -47,18 +47,30 @@ function formatPublishedDate(publishedAt) {
   if (!publishedAt) return '방금 전';
   const date = new Date(publishedAt);
   if (Number.isNaN(date.getTime())) return '방금 전';
-  return date.toISOString().split('T')[0];
+  // 로컬 시간대 기준으로 날짜 추출 (UTC가 아닌)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // YouTube 썸네일 품질 개선
 function getHighResThumbnail(url) {
-  if (!url) return url;
-  if (url.includes('ytimg.com')) {
+  // null, undefined, 빈 문자열 체크
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    return url || '';
+  }
+  
+  // ytimg.com 또는 img.youtube.com 포함하는 경우 고화질로 변환
+  if (url.includes('ytimg.com') || url.includes('img.youtube.com')) {
     return url
       .replace('default.jpg', 'hqdefault.jpg')
       .replace('mqdefault.jpg', 'hqdefault.jpg')
+      .replace('sddefault.jpg', 'hqdefault.jpg')
       .replace('hqdefault.jpg', 'hqdefault.jpg'); // ensure highest available
   }
+  
+  // 다른 형식의 URL이면 원본 그대로 반환
   return url;
 }
 
@@ -104,7 +116,9 @@ export function OverviewTab({ data, channel }) {
       const startDate = new Date();
       
       // 기간에 따른 시작 날짜 계산
-      if (filterPeriod === 'day') {
+      if (filterPeriod === 'hour') {
+        startDate.setHours(endDate.getHours() - 72); // 최근 72시간 (3일)
+      } else if (filterPeriod === 'day') {
         startDate.setDate(endDate.getDate() - 7); // 최근 7일
       } else if (filterPeriod === 'month') {
         startDate.setMonth(endDate.getMonth() - 1); // 최근 1개월 (30일)
@@ -112,13 +126,20 @@ export function OverviewTab({ data, channel }) {
         startDate.setFullYear(endDate.getFullYear() - 1); // 최근 1년
       }
 
-      const to = endDate.toISOString().split('T')[0];
-      const from = startDate.toISOString().split('T')[0];
+      // 시간대별일 때는 날짜+시간 형식, 그 외에는 날짜만
+      const to = filterPeriod === 'hour' 
+        ? endDate.toISOString().slice(0, 16) // 'YYYY-MM-DDTHH:mm'
+        : endDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const from = filterPeriod === 'hour'
+        ? startDate.toISOString().slice(0, 16) // 'YYYY-MM-DDTHH:mm'
+        : startDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
       const periodType =
-        filterPeriod === 'day' ? 'daily' : filterPeriod === 'month' ? 'monthly' : 'yearly';
+        filterPeriod === 'hour' ? 'hourly' :
+        filterPeriod === 'day' ? 'daily' : 
+        filterPeriod === 'month' ? 'monthly' : 'yearly';
 
       try {
-        // 📌 작성 시간(published_at) 기준 통계 API 호출 (AgentController)
+        // 📌 분석 시간(analyzed_at) 기준 통계 API 호출 (AgentController)
         const response = await fetch(
           apiUrl(
             `api/v1/analysis/comments/stats?channelId=${channelId}` +
@@ -135,7 +156,6 @@ export function OverviewTab({ data, channel }) {
           const formattedData = statsArray.map((item) => ({
             name: item.date,
             filtered: item.filteredCount ?? 0,
-            total: item.totalCount ?? 0,
           }));
           setChartData(formattedData);
         } else {
@@ -177,11 +197,11 @@ export function OverviewTab({ data, channel }) {
             }
           });
         } else {
-          console.error("시간대별 악플 통계 조회 실패:", response.status);
+          console.error("시간대 별 악플 통계 조회 실패:", response.status);
           setTimePatternData(null);
         }
       } catch (error) {
-        console.error("시간대별 악플 통계 로드 오류:", error);
+        console.error("시간대 별 악플 통계 로드 오류:", error);
         setTimePatternData(null);
       } finally {
         setIsTimePatternLoading(false);
@@ -313,9 +333,22 @@ export function OverviewTab({ data, channel }) {
   if (!data) {
     return <div className="p-8 text-center text-gray-500">데이터를 불러오는 중입니다...</div>;
   }
-  const totalViews = recentVideos.reduce((sum, video) => sum + (video.viewCount || 0), 0);
-  const totalComments = recentVideos.reduce((sum, video) => sum + (video.commentCount || 0), 0);
-  const totalVideos = recentVideos.length;
+  // 시연용: DB에 저장된 값만 사용 (무조건 DB 값 사용)
+  const totalViews = channel?.totalViewCount ?? channel?.total_view_count ?? 0;
+  const totalComments = channel?.totalCommentCount ?? channel?.total_comment_count ?? 0;
+  const totalVideos = channel?.totalVideoCount ?? channel?.total_video_count ?? 0;
+  
+  // 채널 생성일 포맷팅 (YYYY.MM.DD 형식)
+  const formatChannelCreatedDate = (date) => {
+    if (!date) return '-';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '-';
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}.${month}.${day}`;
+  };
+  const channelCreatedDate = channel?.channelCreatedAt ?? channel?.channel_created_at;
   
   // 재연동 필요 여부 확인
   const getChannelStatus = (lastSyncedAt) => {
@@ -352,44 +385,42 @@ export function OverviewTab({ data, channel }) {
       {!isVideoDetailView && channel && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* 왼쪽 카드: 썸네일 + 채널명 + 핸들명 */}
-          <Card>
-            <CardContent className="pt-3 pb-3">
-              <div className="flex flex-col items-center gap-3">
-                <img
-                  src={channel.thumbnailUrl}
-                  alt={channel.channelName}
-                  className="size-32 rounded-full object-cover ring-4 ring-gray-100 -mt-2"
-                />
-                <div className="text-center mt-2">
-                  <h1 className="text-gray-900 mb-2 font-semibold" style={{ fontSize: '24px' }}>{channel.channelName}</h1>
-                  <p className="text-gray-600">{channel.channelHandle}</p>
+          <Card className="h-full">
+            <CardContent className="pt-4 pb-4 px-4 h-full flex flex-col">
+              <div className="flex flex-col items-center gap-2 flex-1 justify-center">
+                <div className="w-20 h-20 flex-shrink-0">
+                  <img
+                    src={channel.thumbnailUrl}
+                    alt={channel.channelName}
+                    className="w-full h-full rounded-full object-cover ring-2 ring-gray-100"
+                    style={{ width: '80px', height: '80px', maxWidth: '80px', maxHeight: '80px', minWidth: '80px', minHeight: '80px' }}
+                  />
                 </div>
-                {channelStatus?.status === 'warning' && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-600">
-                    <Clock className="size-3 mr-1" />
-                    재연동 필요 ({channelStatus.authExpiry})
-                  </Badge>
-                )}
+                <div className="text-center mt-1">
+                  <h1 className="text-gray-900 mb-1 font-semibold text-lg leading-tight line-clamp-2">{channel.channelName}</h1>
+                  <p className="text-gray-600 text-sm truncate">{channel.channelHandle}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* 중간 카드: 구독자수, 총 조회수, 총 댓글 수, 총 동영상 수 */}
+          {/* 중간 카드: 채널 생성일, 구독자수, 총 조회수, 총 동영상 수 */}
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 h-full lg:justify-center">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
+                  <span className="text-gray-600 text-sm lg:text-base">채널 생성일</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{formatChannelCreatedDate(channelCreatedDate)}</span>
+                </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">구독자 수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()}</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()}명</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 조회수</span>
                   <span className="text-gray-900 font-semibold lg:font-normal">{totalViews.toLocaleString()}회</span>
                 </div>
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
-                  <span className="text-gray-600 text-sm lg:text-base">총 댓글 수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{totalComments.toLocaleString()}개</span>
-                </div>
+
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                   <span className="text-gray-600 text-sm lg:text-base">총 동영상 수</span>
                   <span className="text-gray-900 font-semibold lg:font-normal">{totalVideos}개</span>
@@ -419,6 +450,9 @@ export function OverviewTab({ data, channel }) {
             <CardContent className="pt-5 pb-5 h-full flex flex-col items-center justify-center">
               {(() => {
                 // 필터링 댓글 비율 계산
+                // totalComments: youtube_videos 테이블의 comment_count 합계 (stats.totalCommentCount)
+                // totalFiltered: 필터링된 댓글 수 (stats.totalFilteredCount)
+                const totalComments = stats.totalCommentCount || 0;
                 const filteringRatio = totalComments > 0 
                   ? (totalFiltered / totalComments) * 100 
                   : 0;
@@ -466,6 +500,7 @@ export function OverviewTab({ data, channel }) {
                   댓글 필터링 추이
                 </CardTitle>
                 <CardDescription>
+                  {filterPeriod === 'hour' && '최근 72시간(3일)간의 활동입니다 (6시간 단위)'}
                   {filterPeriod === 'day' && '최근 7일간의 활동입니다'}
                   {filterPeriod === 'month' && '최근 30일간의 활동입니다'}
                   {filterPeriod === 'year' && '최근 1년간의 활동입니다'}
@@ -473,10 +508,11 @@ export function OverviewTab({ data, channel }) {
               </div>
               {/* 기간 선택 셀렉트 박스 */}
               <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="hour">시간대별 (72시간)</SelectItem>
                   <SelectItem value="day">일별 (7일)</SelectItem>
                   <SelectItem value="month">월별 (30일)</SelectItem>
                   <SelectItem value="year">연도별 (1년)</SelectItem>
@@ -491,40 +527,44 @@ export function OverviewTab({ data, channel }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={480}>
-                <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0, total: 0}]}>
+                <LineChart data={chartData.length > 0 ? chartData : [{name: '데이터 없음', filtered: 0}]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis 
                     dataKey="name" 
                     tick={{ fill: '#6B7280', fontSize: 12 }} 
                     axisLine={{ stroke: '#E5E7EB' }} 
-                    minTickGap={30}
+                    minTickGap={filterPeriod === 'hour' ? 20 : 30}
+                    tickFormatter={(value) => {
+                      if (filterPeriod === 'hour') {
+                        // "2025-01-15 00:00" → "01/15 00시"
+                        const [date, time] = value.split(' ');
+                        if (date && time) {
+                          const [year, month, day] = date.split('-');
+                          const hour = time.split(':')[0];
+                          return `${month}/${day} ${hour}시`;
+                        }
+                      }
+                      return value;
+                    }}
                   />
-                  <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} axisLine={{ stroke: '#E5E7EB' }} />
+                  <YAxis 
+                    tick={{ fill: '#6B7280', fontSize: 12 }} 
+                    axisLine={{ stroke: '#E5E7EB' }}
+                    label={{ value: '필터링된 댓글 수 (건)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#6B7280' } }}
+                    tickFormatter={(value) => Math.round(value).toString()}
+                  />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                    formatter={(value, name) => [
-                      `${Number(value).toLocaleString()}건`,
-                      name === '필터링 댓글' ? '필터링 된 댓글' : '총 댓글'
-                    ]}
+                    formatter={(value) => [`${Number(value).toLocaleString()}건`, '필터링된 댓글']}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="filtered" 
-                    stroke="#4F9DDE" 
-                    strokeWidth={2}
-                    dot={{ fill: '#4F9DDE', r: 4 }}
-                    activeDot={{ r: 6 }}
-                    name="필터링 댓글" 
-                    animationDuration={1000}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    stroke="#94A3B8" 
-                    strokeWidth={2}
-                    dot={{ fill: '#94A3B8', r: 4 }}
-                    activeDot={{ r: 6 }}
-                    name="총 댓글" 
+                    stroke="#EF4444" 
+                    strokeWidth={3}
+                    dot={{ fill: '#EF4444', r: 5 }}
+                    activeDot={{ r: 7 }}
+                    name="필터링된 댓글" 
                     animationDuration={1000}
                   />
                 </LineChart>
@@ -543,7 +583,7 @@ export function OverviewTab({ data, channel }) {
                 <CardDescription>
                   {(() => {
                     if (!timePatternData) {
-                      return '시간대별 악플 집중 현황입니다';
+                      return '시간대 별 악플 집중 현황입니다';
                     }
                     const totalCount = Object.values(timePatternData.distribution).reduce((sum, val) => sum + val, 0);
                     if (totalCount > 0 && timePatternData.red_zone.count > 0) {
@@ -554,7 +594,7 @@ export function OverviewTab({ data, channel }) {
                         </span>
                       );
                     }
-                    return '시간대별 악플 집중 현황입니다';
+                    return '시간대 별 악플 집중 현황입니다';
                   })()}
                 </CardDescription>
               </div>
@@ -567,7 +607,7 @@ export function OverviewTab({ data, channel }) {
               </div>
             ) : !timePatternData ? (
               <div className="h-[480px] flex items-center justify-center">
-                <p className="text-sm text-gray-500">시간대별 악플 통계 데이터를 불러올 수 없습니다</p>
+                <p className="text-sm text-gray-500">시간대 별 악플 통계 데이터를 불러올 수 없습니다</p>
               </div>
             ) : (() => {
               // 시간대 데이터 변환 (Object -> Array for Chart)
@@ -652,9 +692,17 @@ export function OverviewTab({ data, channel }) {
               let weatherInfo = null;
               let WeatherIcon = null;
               
-              if (stats && stats.totalCommentCount > 0 && !isNaN(stats.filteringRatio)) {
-                weatherInfo = getChannelWeatherInfo(stats.filteringRatio);
-                WeatherIcon = weatherInfo.icon;
+              // VideoDetailTab과 동일한 방식으로 계산 (video.commentCount 사용)
+              const totalComments = video.commentCount || 0;
+              const filteredComments = stats?.totalFilteredCount || 0;
+              
+              if (totalComments > 0) {
+                const filteringRatio = (filteredComments / totalComments) * 100;
+                
+                if (!isNaN(filteringRatio)) {
+                  weatherInfo = getChannelWeatherInfo(filteringRatio);
+                  WeatherIcon = weatherInfo.icon;
+                }
               }
 
               return (
@@ -668,9 +716,9 @@ export function OverviewTab({ data, channel }) {
                   }}
                 >
                   <div className="relative w-full pt-[56.25%] overflow-hidden rounded-3xl bg-gray-100">
-                    {video.thumbnail && (
+                    {(video.thumbnail || video.thumbnailUrl) && (
                       <img
-                        src={getHighResThumbnail(video.thumbnail)}
+                        src={video.thumbnail || video.thumbnailUrl}
                         alt={video.title}
                         className="absolute inset-0 w-full h-full object-cover"
                       />

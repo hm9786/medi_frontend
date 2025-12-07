@@ -236,7 +236,7 @@ function ChannelListView({ handleChannelSelect, channels, onSyncChannels, onDele
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span className="text-gray-600 text-sm leading-[1.5]">필터링된 댓글</span>
+                    <span className="text-gray-600 text-sm leading-[1.5]">필터링 된 댓글</span>
                     <span className="text-gray-900 font-bold text-lg leading-[1.5]">{filteredCount.toLocaleString()}개</span>
                   </div>
                 </CardContent>
