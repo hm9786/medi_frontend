@@ -1,6 +1,6 @@
  "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldAlert, TriangleAlert, UserCheck, ArrowRight, AlertTriangle, UserX, Clock, Target, Siren, TrendingUp, FileText, MessageSquare, CheckCircle, ThumbsUp, ThumbsDown, PlaySquare, ShieldCheck, CheckCircle2, XCircle, ChevronDown, ChevronUp, Lightbulb, XOctagon, PlayCircle, Info, Loader2, Circle, TrendingUp as TrendingUpIcon, Download } from "lucide-react";
 import {
@@ -34,205 +34,6 @@ function HighlightText({ children }) {
   );
 }
 
-// 하드코딩된 보고서 데이터 (백엔드 연동 전 임시 데이터)
-const initialReportData = {
-  "channel_name": "서빈감각",
-  "generated_at": "2025-12-06T22:00:10.236107",
-  "total_comments": 57,
-  "statistics_summary": {
-    "total_filtered": 57,
-    "repeat_offenders_count": 2
-  },
-  "section_1_threat_intelligence": {
-    "section_title": "🔍 위협 인텔리전스",
-    "generated_at": "2025-12-06T21:58:42.199940",
-    "repeat_offenders": {
-      "top3_categories": [
-        {
-          "category": "인신공격/외모비하",
-          "description": "특정 크리에이터를 직접 겨냥한 욕설·모욕, 외모·능력·정체성 등을 폄하하는 표적화된 공격이 대다수입니다."
-        },
-        {
-          "category": "성적 대상화/성희롱",
-          "description": "성적 제안·희롱·노골적 성적 표현(섹드립)으로 대상에게 수치심이나 피해를 주는 발언이 다수 존재합니다."
-        },
-        {
-          "category": "성별 비하/여성혐오",
-          "description": "여성(혹은 특정 성별)을 일반화·경멸하는 표현과 혐오적 비하가 반복적으로 나타납니다."
-        }
-      ],
-      "offenders": [
-        {
-          "author_name": "@석-b7e",
-          "total_attacks": 3,
-          "category_distribution": {
-            "인신공격/외모비하": 3,
-            "성적 대상화/성희롱": 0,
-            "성별 비하/여성혐오": 2
-          }
-        },
-        {
-          "author_name": "@JAYJAY-em6mz",
-          "total_attacks": 2,
-          "category_distribution": {
-            "인신공격/외모비하": 1,
-            "성적 대상화/성희롱": 0,
-            "성별 비하/여성혐오": 1
-          }
-        }
-      ],
-      "status": "발견됨"
-    },
-    "intensity_distribution": {
-      "critical": 11,
-      "high": 46,
-      "total": 57
-    },
-    "time_patterns": {
-      "distribution": {
-        "새벽 (00-06시)": 17,
-        "오전 (06-12시)": 20,
-        "오후 (12-18시)": 15,
-        "저녁 (18-22시)": 3,
-        "심야 (22-24시)": 2
-      },
-      "red_zone": {
-        "time_slot": "오전 (06-12시)",
-        "count": 20,
-        "percentage": 35.1
-      }
-    }
-  },
-  "section_2_defense_strategy": {
-    "section_title": "🛡️ 콘텐츠 방어 전략",
-    "generated_at": "2025-12-06T22:00:10.236107",
-    "top3_attacked_videos": [
-      {
-        "video_id": "1psIOlLouP0",
-        "video_title": "한국에서 연애 못하면 일본여자 만나면 될까?",
-        "video_thumbnail": "https://i.ytimg.com/vi/1psIOlLouP0/hqdefault.jpg",
-        "attack_count": 10,
-        "transcript_preview": "스크립트 정보 없음",
-        "trigger_analysis": {
-          "trigger_points": [
-            {
-              "trigger_quote": "[추정] \"한국에서 연애 못하면 일본여자 만나면 되지\"",
-              "why_problematic": "특정 국적·성별(일본여자 vs 한국여자)을 단순 비교해 일본여성을 대체 가능하고 더 호의적인 대상으로 일반화하는 발언입니다. 여성들을 '해결책'으로 소비하고 한국 여성에 대해 깎아내리는 서술은 성차별적·국적차별적 고정관념을 조장하고 대상 집단의 자존감과 정체성에 대한 공격으로 인식됩니다.",
-              "comment_reaction": "크리에이터 능력·인격 공격('이분 잘 모르시네', '퇴물'), 집단 비방(한국여자 비하), '가스라이팅'·'정신병' 같은 강한 표현으로 분노·혐오 표출."
-            },
-            {
-              "trigger_quote": "[추정] \"일본여자들은 리액션이 좋고 작은 것에도 고마워할 줄 알아서 한국 남자한테 더 잘 맞는다\"",
-              "why_problematic": "일본 여성의 성격을 단일하고 수동적인 특성으로 환원하고, 한국 여성은 까다롭다는 식의 비교는 성별·국적에 대한 고정관념과 성적 대상화로 이어집니다. 또한 '한국 남자'의 문제를 타국 여성과의 관계 해결로 제시하는 방식은 책임전가·편견을 부추깁니다.",
-              "comment_reaction": "일부는 내용의 사실성·전문성 부족을 지적('잘 모르는 내용을 주워들었다'), 일부는 집단·개인에 대한 모욕(연령·외모·정신 상태 비하), 가스라이팅·정신승리 비난 등 감정적 반발."
-            }
-          ],
-          "overall_assessment": "스크립트가 제공되지 않아 발언은 댓글들을 바탕으로 추정했습니다. 댓글 패턴으로 보아 '국적·성별을 단일화해 비교·대체'하는 표현이 핵심 트리거로 작용해 강한 분노와 집단 비하 반응을 유발한 것으로 판단됩니다."
-        }
-      },
-      {
-        "video_id": "-4M7Wq0em8g",
-        "video_title": "내가 잘생겼는지 예쁜지 궁금할 때 아는 방법",
-        "video_thumbnail": "https://i.ytimg.com/vi/-4M7Wq0em8g/hqdefault.jpg",
-        "attack_count": 8,
-        "transcript_preview": "스크립트 정보 없음",
-        "trigger_analysis": {
-          "trigger_points": [
-            {
-              "trigger_quote": "명확한 트리거 식별 어려움",
-              "why_problematic": "스크립트 원문이 제공되지 않아 특정 발언을 인용할 수 없습니다. 다만 악플 패턴으로 미루어볼 때 영상에서 (1) 출연자 외모나 성형 여부를 직접적으로 언급하거나 확대해서 보여주는 장면(또는 발언), (2) 신체 특정 부위(예: 코)를 비하하거나 조롱할 만한 표현/연출, 혹은 (3) 폭력성 또는 성적·학대 관련한 묘사가 있었을 가능성이 큽니다. 이러한 요소는 개인을 표적화하여 모욕·수치심을 유발하고, 일부 댓글처럼 아동·청소년 연관 성적 서술을 촉발할 경우 플랫폼 안전 정책 위반 민감도를 크게 높입니다.",
-              "comment_reaction": "댓글들은 주로 외모 비하(성형 의혹·못생김·코 비뚤다 등), 인신공격(폭력적이라는 지적 포함), 그리고 한 건은 미성년자 관련 성적 서술을 포함한 고발성 발언으로 나뉩니다. 전반적으로 댓글자들은 영상이나 출연자의 외모/과거에 대해 표적화된 조롱·비난을 즉각적으로 쏟아내며, 일부는 감정적인 분노(조롱·모욕·비하)로 반응하고 있습니다."
-            }
-          ],
-          "overall_assessment": "스크립트가 없어 정확한 발언을 특정하기는 어렵습니다. 제공된 악플은 주로 외모·성형 관련 지적과 표적화된 모욕(및 한 건의 아동·청소년 관련 성적 서술)으로 구성되어 있어, 영상 내 외모 언급·노출·논란성 묘사가 분노 유발의 핵심 트리거였을 가능성이 높습니다."
-        }
-      },
-      {
-        "video_id": "yaQoGDn64a8",
-        "video_title": "나이들수록 주변에 괜찮은사람이 없는 이유",
-        "video_thumbnail": "https://i.ytimg.com/vi/yaQoGDn64a8/hqdefault.jpg",
-        "attack_count": 7,
-        "transcript_preview": "스크립트 정보 없음",
-        "trigger_analysis": {
-          "trigger_points": [
-            {
-              "trigger_quote": "결혼했다고 해서 괜찮은 사람이 아님(※댓글에서 유추된 발언)",
-              "why_problematic": "결혼 여부로 사람의 '괜찮음'을 일반화하는 표현으로 특정 집단을 편견적으로 규정합니다. 근거 없는 일반화는 시청자의 공감을 잃게 하고, 대상 집단(기혼자/미혼자)을 불필요하게 폄하하게 됩니다.",
-              "comment_reaction": "시청자들이 '일반화의 오류'를 지적하며 반박(논리적 비판)하는 대신 감정적으로 격앙되어 조롱·모욕(예: '쇼츠.. 결혼했다고 해서 괜찮은 사람이 아님 ㅋㅋ')으로 응수함."
-            },
-            {
-              "trigger_quote": "사람들에게 '하자'가 있다/하자 있는 사람들(※댓글에서 유추된 발언)",
-              "why_problematic": "사람을 '하자'처럼 결함 있는 물건 취급하는 표현은 비하·비인간화로 받아들여질 수 있어 강한 반발을 일으킵니다. 개인의 결점을 일반화·비하하는 어조는 대화의 의도를 넘어 인신공격을 유발합니다.",
-              "comment_reaction": "직접적인 인신공격·조롱(예: '모지라', '너도 참 ...')로 반응하며 감정적 충돌이 확대됨."
-            },
-            {
-              "trigger_quote": "\"뭐 잘생긴 사람은 궁금하지 않아서 클릭하지 않는다\"(※댓글 인용문 추정)",
-              "why_problematic": "특정 외모군을 깎아내리거나 무시하는 듯한 표현은 청중에게 거만하거나 모순적으로 비춰질 수 있습니다. 특히 제작자 외모에 대한 민감도가 높은 플랫폼에서는 발언이 개인 공격으로 확산될 위험이 큽니다.",
-              "comment_reaction": "제작자 외모·성형·탈모 등 개인 신체·외모 공격으로 반응(예: '성형', '탈모' 언급)하며 내용 비판을 넘어선 악플이 다수 발생함."
-            }
-          ],
-          "overall_assessment": "댓글들을 종합하면 시청자의 분노는 '집단을 규정·비하하는 일반화 발언'과 '사람을 결함으로 표현하는 모욕적 어조'에서 촉발된 것으로 보입니다. 스크립트가 제공되지 않아 문구는 댓글을 통해 추정한 것이므로, 원문 확인 시 일부 식별은 달라질 수 있습니다."
-        }
-      }
-    ],
-    "preventive_guidelines": {
-      "do_guidelines": [
-        {
-          "guideline": "업로드 시간 조정: 오전 06-12시(레드존)을 피하고 시청자 반응이 보다 온화한 오후·저녁 시간에 게시하거나 예약 업로드를 사용하세요.",
-          "reason": "분석 결과 오전 시간대에 악플·감정적 반응이 집중됩니다. 즉시 노출을 줄이면 초기 악성 댓글 확산을 막을 수 있습니다.",
-          "expected_impact": "초기 악플 발생 빈도 감소, 모더레이션 부담 완화, 커뮤니티 분위기 관리 용이"
-        },
-        {
-          "guideline": "출시 전 민감도 체크와 내부 검토를 시행하세요: 제목·썸네일·설명에 '국적·나이·성별 일반화' 표현이 없는지 검토하고, 필요시 외부감수자(또는 신뢰할 수 있는 팀원)에게 피드백을 받으세요.",
-          "reason": "'한국에서 연애 못하면 일본여자…', '나이들수록 주변에…'처럼 민감한 주제는 잘못된 표현 하나로 대상화·비하·오해를 유발합니다.",
-          "expected_impact": "오해의 소지 제거로 특정 그룹 대상 공격 감소, 조회수는 유지하면서 부정적 반응 최소화"
-        },
-        {
-          "guideline": "댓글 중재와 필터링을 강화하세요: 금칙어 자동필터, 신고 우선 처리, '댓글 보류(사전승인)' 옵션, 레드존에 맞춘 모더레이터 근무 스케줄을 적용하세요.",
-          "reason": "악성댓글은 업로드 직후 집중 발생하므로 자동화와 인력 배치가 피해 확산을 막는 핵심입니다.",
-          "expected_impact": "악성 댓글 비공개·삭제 속도 향상, 커뮤니티 규범 유지, 건전한 토론 환경 조성"
-        },
-        {
-          "guideline": "문제 제기는 하되 해결 중심·공감형 어조로 구성하세요: 개인 탓·일반화 대신 사례·데이터·전문가 의견을 인용하고, 보조 설명(예: '개인적 경험입니다', '모든 경우가 아닙니다')을 명시하세요.",
-          "reason": "공격적 표현은 감정적 분노를 촉발해 악플 유입을 늘립니다. 건설적 프레임은 논쟁을 줄이고 대화로 유도합니다.",
-          "expected_impact": "댓글의 질 향상, 개인공격 감소, 긍정적 참여자 비율 증가"
-        },
-        {
-          "guideline": "위기 대응 매뉴얼을 마련하고 고정 공지·핀댓글을 준비하세요: 악플 폭주 시 사용할 표준 응답문구, 신고 절차 안내, 법적·플랫폼 대응 기준을 정리해 팀과 공유하세요.",
-          "reason": "사전 계획이 없으면 초기 대응이 혼선되어 상황이 악화됩니다. 고정 공지로 시청자에게 명확한 규칙을 제시하세요.",
-          "expected_impact": "신속하고 일관된 대응, 브랜드 신뢰 유지, 장기적 피해·법적 리스크 감소"
-        }
-      ],
-      "dont_guidelines": [
-        {
-          "guideline": "특정 국가·성별·연령을 일반화하거나 희화화하는 제목·표현을 사용하지 마세요.",
-          "reason": "대상화·스테레오타이핑이 집단적 분노와 혐오성 댓글을 유발하며 플랫폼 제재 대상이 될 수 있습니다.",
-          "risk_level": "🔴높음"
-        },
-        {
-          "guideline": "논쟁 유도형 클릭베이트(과도한 자극적 문구·도발적 썸네일)를 사용하지 마세요.",
-          "reason": "클릭률은 오를 수 있으나 트롤과 악성 댓글을 불러와 커뮤니티 질서를 해칩니다.",
-          "risk_level": "🔴높음"
-        },
-        {
-          "guideline": "레드존(오전 06-12시)에 라이브 방송이나 논쟁 유발 콘텐츠를 게시하지 마세요.",
-          "reason": "해당 시간대는 부정적 반응이 집중되는 시간대이므로 관리·대응이 어려워집니다.",
-          "risk_level": "🔴높음"
-        },
-        {
-          "guideline": "악플에 감정적으로 대응하거나 공개적으로 논쟁을 심화시키지 마세요 (개인 공격·보복성 댓글 금지).",
-          "reason": "감정적 대응은 상황을 증폭시키고 추가 악성 댓글과 확산을 초래합니다.",
-          "risk_level": "🟠중간"
-        },
-        {
-          "guideline": "댓글 관리 및 신고 절차를 무시하거나 모더레이션을 해제해 방치하지 마세요.",
-          "reason": "관리 부재는 악성댓글의 자연 증폭을 허용해 채널 이미지와 시청자 안전을 해칩니다.",
-          "risk_level": "🔴높음"
-        }
-      ]
-    }
-  }
-};
-
 export function BadCommentsTab({ data }) {
   const [openThreatReport, setOpenThreatReport] = useState(false);
   const [openDefenseReport, setOpenDefenseReport] = useState(false);
@@ -248,14 +49,123 @@ export function BadCommentsTab({ data }) {
   const youtubeChannelId = data?.youtubeChannelId;
   const channelNameFromProps = data?.channelName || "";
 
-  // 보고서 데이터 (초기에는 하드코딩된 데이터 사용 - 백엔드 연동 전 임시)
-  const [reportData, setReportData] = useState(initialReportData);
+  // 보고서 데이터 (DB에서 가져온 실제 데이터)
+  const [reportData, setReportData] = useState(null);
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [reportError, setReportError] = useState(null);
 
   // 보고서 생성 로딩 모달 상태
   const [openReportLoading, setOpenReportLoading] = useState(false);
   // idle | in_progress | done
   const [threatStatus, setThreatStatus] = useState("idle");
   const [defenseStatus, setDefenseStatus] = useState("idle");
+
+  // 보고서 데이터를 가져오는 함수 (재사용 가능)
+  const fetchReportData = useCallback(async () => {
+    if (!channelDbId) {
+      console.warn("채널 ID가 없어 보고서를 가져올 수 없습니다.");
+      return;
+    }
+
+    setIsLoadingReport(true);
+    setReportError(null);
+
+    try {
+      // 메타데이터 조회
+      const metaRes = await fetch(
+        apiUrl(`/api/youtube/analysis/channel/${channelDbId}/metadata`),
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+
+      if (!metaRes.ok) {
+        if (metaRes.status === 404) {
+          // 보고서 데이터가 없는 경우 (아직 생성되지 않음)
+          setReportData(null);
+          setIsLoadingReport(false);
+          return;
+        }
+        throw new Error(`메타데이터 조회 실패: ${metaRes.status}`);
+      }
+
+      const meta = await metaRes.json();
+
+      // 위협 인텔리전스와 방어 전략 데이터 병렬 조회
+      const [threatRes, defenseRes] = await Promise.all([
+        fetch(
+          apiUrl(`/api/youtube/analysis/channel/${channelDbId}/threat-intelligence`),
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        ),
+        fetch(
+          apiUrl(`/api/youtube/analysis/channel/${channelDbId}/defense-strategy`),
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        ),
+      ]);
+
+      if (!threatRes.ok || !defenseRes.ok) {
+        throw new Error("위협 인텔리전스/방어 전략 조회 실패");
+      }
+
+      const threat = await threatRes.json();
+      const defense = await defenseRes.json();
+      const defenseSection = defense.section_2_defense_strategy || defense;
+
+      // 응답을 새로운 구조에 맞게 매핑
+      const reportData = {
+        channel_name: meta.channelName,
+        generated_at: meta.generatedAt,
+        total_comments: meta.totalComments,
+        section_1_threat_intelligence: {
+          section_title: threat.section_title || "🔍 위협 인텔리전스",
+          generated_at: threat.generated_at || meta.generatedAt,
+          repeat_offenders: threat.repeat_offenders || {},
+          intensity_distribution: threat.intensity_distribution || {
+            critical: 0,
+            high: 0,
+            total: 0,
+          },
+          time_patterns: threat.time_patterns || {
+            distribution: {},
+            red_zone: { time_slot: "", count: 0, percentage: 0 },
+          },
+        },
+        section_2_defense_strategy: {
+          section_title: defenseSection.section_title || "🛡️ 콘텐츠 방어 전략",
+          generated_at: defenseSection.generated_at || meta.generatedAt,
+          top3_attacked_videos: (defenseSection.top3_attacked_videos || []).map((video) => ({
+            ...video,
+            video_thumbnail: video.video_thumbnail || video.image_url || "https://i.ytimg.com/vi/rppeR7bHeQw/default.jpg",
+          })),
+          preventive_guidelines: defenseSection.preventive_guidelines || {
+            do_guidelines: [],
+            dont_guidelines: [],
+          },
+        },
+      };
+
+      setReportData(reportData);
+      setIsLoadingReport(false);
+    } catch (error) {
+      console.error("보고서 데이터 조회 실패:", error);
+      setReportError(error.message);
+      setIsLoadingReport(false);
+    }
+  }, [channelDbId]);
+
+  // 컴포넌트 마운트 시 보고서 데이터 자동 로드
+  useEffect(() => {
+    if (channelDbId) {
+      fetchReportData();
+    }
+  }, [channelDbId, fetchReportData]);
 
   // 폴링 interval 정리
   const clearReportPolling = () => {
@@ -520,6 +430,8 @@ export function BadCommentsTab({ data }) {
       // "생성 완료" 메시지를 사용자가 볼 수 있도록 약간의 딜레이 후 모달 닫기
       setTimeout(() => {
         setOpenReportLoading(false);
+        // 보고서 생성 완료 후 데이터 다시 가져오기 (최신 데이터 보장)
+        fetchReportData();
       }, 1500);
     } catch (error) {
       // 사용자가 로딩 모달을 닫아서 취소한 경우에는 에러 알림을 띄우지 않음
@@ -549,7 +461,19 @@ export function BadCommentsTab({ data }) {
     return () => clearTimeout(timer);
   }, [openReportLoading]);
 
-  // reportData가 없을 때는 빈 화면 표시 (하드코딩 데이터 사용으로 이 부분은 실행되지 않음)
+  // 로딩 중일 때
+  if (isLoadingReport) {
+    return (
+      <div className="w-full flex justify-center items-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin" />
+          <p className="text-slate-600 text-base">보고서 데이터를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // reportData가 없을 때는 빈 화면 표시
   if (!reportData) {
     return (
       <>
@@ -558,13 +482,31 @@ export function BadCommentsTab({ data }) {
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
               메디 보고서
             </h1>
-            <Button
-              type="button"
-              className="text-base md:text-lg px-8 py-6"
-              onClick={startReportGenerationFlow}
-            >
-              보고서 생성하기
-            </Button>
+            {reportError ? (
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-red-600 text-sm">보고서를 불러오는 중 오류가 발생했습니다: {reportError}</p>
+                <Button
+                  type="button"
+                  className="text-base md:text-lg px-8 py-6"
+                  onClick={fetchReportData}
+                >
+                  다시 시도
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-slate-600 text-base">
+                  아직 생성된 보고서가 없습니다. 보고서를 생성해주세요.
+                </p>
+                <Button
+                  type="button"
+                  className="text-base md:text-lg px-8 py-6"
+                  onClick={startReportGenerationFlow}
+                >
+                  보고서 생성하기
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
