@@ -1,11 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 export default function OAuth2ErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <OAuth2ErrorInner />
+    </Suspense>
+  );
+}
+
+function OAuth2ErrorInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");

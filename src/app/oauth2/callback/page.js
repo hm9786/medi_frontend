@@ -1,11 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useDispatch } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginSuccess, loginFailure } from "@/lib/slices/authSlice";
+import { apiUrl } from "@/lib/config";
+import { Loader2 } from "lucide-react";
 
 export default function OAuth2CallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <OAuth2CallbackInner />
+    </Suspense>
+  );
+}
+
+function OAuth2CallbackInner() {
   const dispatch = useDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,7 +29,7 @@ export default function OAuth2CallbackPage() {
       try {
         // 백엔드에서 구글 OAuth 인증 후 리다이렉트된 경우
         // 세션 확인 API 호출 (OAuth2와 일반 로그인 모두 지원)
-        const response = await fetch("http://localhost:8080/api/auth/me", {
+        const response = await fetch(apiUrl("api/auth/me"), {
           method: "GET",
           credentials: "include",
         });

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation"; // 1. Navigation 컴포넌트 가져오기
+import { apiUrl, API_BASE_URL } from "@/lib/config";
 import {
   loginStart,
   loginSuccess,
@@ -84,7 +85,7 @@ export default function LoginPage() {
 
     try {
       // 2. 백엔드 API 호출
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch(apiUrl("api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +128,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation />
+      <Navigation variant="landing" hideButtons={true} />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-16">
@@ -224,7 +225,7 @@ export default function LoginPage() {
               try {
                 dispatch(loginStart()); // Redux 로딩 상태 시작
                 // 구글 OAuth 로그인 URL 조회
-                const response = await fetch("http://localhost:8080/api/auth/oauth2/google/url", {
+                const response = await fetch(apiUrl("api/auth/oauth2/google/url"), {
                   method: "GET",
                   credentials: "include",
                 });
@@ -240,7 +241,7 @@ export default function LoginPage() {
                 // URL이 상대 경로인 경우 백엔드 base URL과 결합
                 const redirectUrl = data.url.startsWith("http") 
                   ? data.url 
-                  : `http://localhost:8080${data.url}`;
+                  : `${API_BASE_URL}${data.url}`;
                 
                 window.location.href = redirectUrl;
               } catch (error) {

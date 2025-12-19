@@ -6,24 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-// 1. 네비게이션 (헤더) 뼈대
-// (회원가입 단계에서는 로고만 보여주는 것이 깔끔합니다.)
-function Navigation() {
-  return (
-    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-sm z-50">
-      <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-        {/* 로고 (Comic Neue 폰트 적용) */}
-        <Link
-          href="/"
-          className="text-black text-4xl font-bold font-['Comic_Neue'] leading-[54px]"
-        >
-          Medi
-        </Link>
-      </nav>
-    </header>
-  );
-}
+import Navigation from "@/components/Navigation";
+import { apiUrl } from "@/lib/config";
 
 // 10. 에러/성공 메시지 표시 헬퍼 컴포넌트
 // (컴포넌트 바깥에 정의하여 ESLint 에러를 방지합니다)
@@ -141,7 +125,7 @@ export default function SignupStep2Page() {
     setErrors((prev) => ({ ...prev, email: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/send-verification", {
+      const response = await fetch(apiUrl("api/auth/send-verification"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -205,7 +189,7 @@ export default function SignupStep2Page() {
     setErrors((prev) => ({ ...prev, authCode: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/verify-email", {
+      const response = await fetch(apiUrl("api/auth/verify-email"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -287,7 +271,7 @@ export default function SignupStep2Page() {
 
     try {
       // 회원가입 API 호출
-      const response = await fetch("http://localhost:8080/api/auth/register", {
+      const response = await fetch(apiUrl("api/auth/register"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -344,7 +328,7 @@ export default function SignupStep2Page() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation />
+      <Navigation variant="landing" />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-center items-center pt-20">

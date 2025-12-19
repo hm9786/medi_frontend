@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import { apiUrl } from "@/lib/config";
 
 // 에러/성공 메시지 표시 헬퍼 컴포넌트
 const FormMessage = ({ name, errors, success }) => {
@@ -38,17 +39,61 @@ export default function FindPasswordPage() {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  
+  // 타이머 State
+  const [timeLeft, setTimeLeft] = useState(0); // 남은 시간 (초)
+  const timerRef = useRef(null);
 
   const router = useRouter();
+
+  // 타이머 관리 useEffect
+  useEffect(() => {
+    if (timeLeft > 0 && !isCodeVerified) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timeLeft, isCodeVerified]);
+
+  // 시간 포맷팅 함수 (MM:SS)
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+  };
 
   // 입력창 값 변경 핸들러
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
 
-    // 입력창이 바뀌면 에러 메시지 초기화
+    // 입력창이 바뀌면 에러 메시지와 성공 메시지 초기화
     if (errors[id]) {
       setErrors((prev) => ({ ...prev, [id]: "" }));
+    }
+    if (success[id]) {
+      setSuccess((prev) => ({ ...prev, [id]: "" }));
+    }
+    
+    // 인증번호 입력이 변경되면 인증 완료 상태도 초기화
+    if (id === "authCode" && isCodeVerified) {
+      setIsCodeVerified(false);
     }
   };
 
@@ -108,7 +153,7 @@ export default function FindPasswordPage() {
     setErrors((prev) => ({ ...prev, email: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/send-password-reset", {
+      const response = await fetch(apiUrl("api/auth/send-password-reset"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -143,6 +188,12 @@ export default function FindPasswordPage() {
           email: "인증번호가 발송되었습니다. 5분 내에 입력해주세요.",
         }));
         setIsAuthCodeSent(true);
+        setTimeLeft(300); // 5분 = 300초
+        // 인증번호 확인 상태 초기화 (재전송 시)
+        setIsCodeVerified(false);
+        setFormData((prev) => ({ ...prev, authCode: "" }));
+        setErrors((prev) => ({ ...prev, authCode: "" }));
+        setSuccess((prev) => ({ ...prev, authCode: "" }));
       } else {
         setErrors((prev) => ({
           ...prev,
@@ -164,17 +215,70 @@ export default function FindPasswordPage() {
   const handleVerifyAuthCode = async () => {
     if (formData.authCode.length !== 6) {
       setErrors((prev) => ({ ...prev, authCode: "인증번호 6자리를 입력해주세요." }));
+      setSuccess((prev) => ({ ...prev, authCode: "" }));
       return;
     }
 
     setIsVerifyingCode(true);
     setErrors((prev) => ({ ...prev, authCode: "" }));
+    setSuccess((prev) => ({ ...prev, authCode: "" }));
 
-    // 인증번호 확인은 비밀번호 재설정 API에서 함께 처리되므로
-    // 여기서는 단순히 형식만 확인하고, 실제 확인은 비밀번호 재설정 시점에 수행
-    setSuccess((prev) => ({ ...prev, authCode: "인증번호가 입력되었습니다." }));
-    setIsCodeVerified(true);
-    setIsVerifyingCode(false);
+    try {
+      const response = await fetch(apiUrl("api/auth/verify-email"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          code: formData.authCode,
+        }),
+      });
+
+      // HTTP 상태 코드 확인
+      if (!response.ok) {
+        try {
+          const errorData = await response.json();
+          setErrors((prev) => ({
+            ...prev,
+            authCode: errorData.message || "올바른 인증번호를 입력하세요.",
+          }));
+          setSuccess((prev) => ({ ...prev, authCode: "" }));
+        } catch {
+          setErrors((prev) => ({
+            ...prev,
+            authCode: "올바른 인증번호를 입력하세요.",
+          }));
+          setSuccess((prev) => ({ ...prev, authCode: "" }));
+        }
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess((prev) => ({ ...prev, authCode: "인증번호가 확인되었습니다." }));
+        setErrors((prev) => ({ ...prev, authCode: "", submit: "" }));
+        setIsCodeVerified(true);
+        setTimeLeft(0); // 타이머 정지
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          authCode: data.message || "올바른 인증번호를 입력하세요.",
+        }));
+        setSuccess((prev) => ({ ...prev, authCode: "" }));
+      }
+    } catch (error) {
+      console.error("인증번호 확인 오류:", error);
+      setErrors((prev) => ({
+        ...prev,
+        authCode: "서버 연결에 실패했습니다. 다시 시도해주세요.",
+      }));
+      setSuccess((prev) => ({ ...prev, authCode: "" }));
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   // 비밀번호 재설정
@@ -217,7 +321,7 @@ export default function FindPasswordPage() {
     setErrors((prev) => ({ ...prev, submit: "" }));
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/reset-password", {
+      const response = await fetch(apiUrl("api/auth/reset-password"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -272,7 +376,7 @@ export default function FindPasswordPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation />
+      <Navigation variant="landing" />
 
       {/* 메인 콘텐츠 */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-16">
@@ -292,7 +396,7 @@ export default function FindPasswordPage() {
               >
                 아이디(이메일)
               </Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Input
                   type="email"
                   id="email"
@@ -301,18 +405,29 @@ export default function FindPasswordPage() {
                   onChange={handleChange}
                   onBlur={validateEmail}
                   disabled={isCodeVerified}
-                  className="h-14 rounded-2xl text-base"
+                  className="h-14 rounded-2xl text-base flex-1"
                 />
                 <Button
                   type="button"
                   onClick={handleRequestAuthCode}
-                  disabled={isCodeVerified || isSendingCode}
+                  disabled={isCodeVerified || isSendingCode || (timeLeft > 0 && isAuthCodeSent)}
                   className="h-14 rounded-lg text-base shrink-0"
                 >
                   {isSendingCode ? "발송 중..." : isAuthCodeSent ? "재전송" : "인증번호 받기"}
                 </Button>
               </div>
-              <FormMessage name="email" errors={errors} success={success} />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <FormMessage name="email" errors={errors} success={success} />
+                </div>
+                {isAuthCodeSent && timeLeft > 0 && !isCodeVerified && success.email && (
+                  <div className="shrink-0">
+                    <span className="text-sm font-medium text-gray-500">
+                      {formatTime(timeLeft)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 인증번호 입력 (인증번호 발송 후 표시) */}

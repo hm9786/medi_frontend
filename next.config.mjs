@@ -1,13 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // 다른 로컬 IP에서 오는 개발 요청 허용
-    allowedDevOrigins: [
-      'http://192.168.70.188:3000',
-      'http://localhost:3000'
-    ],
-  },
-
+  output: 'standalone',
   images: {
     // 외부 이미지 도메인 허용 (YouTube, Google 등)
     domains: [

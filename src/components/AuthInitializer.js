@@ -3,17 +3,21 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { restoreSession } from "@/lib/slices/authSlice";
+import { apiUrl } from "@/lib/config";
 
 export default function AuthInitializer() {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    const controller = new AbortController();
+
     // 앱 초기 로드 시 세션 확인
     const checkSession = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/auth/me", {
+        const response = await fetch(apiUrl("api/auth/me"), {
           method: "GET",
           credentials: "include",
+          signal: controller.signal,
         });
 
         // HTTP 상태 코드 확인
@@ -29,12 +33,19 @@ export default function AuthInitializer() {
           dispatch(restoreSession(data.user));
         }
       } catch (error) {
+        if (error.name === "AbortError") {
+          return; // 컴포넌트 언마운트로 인한 fetch 중단은 무시
+        }
         // 네트워크 오류 등은 조용히 처리 (로그인 안 된 것으로 간주)
-        console.error("세션 확인 오류:", error);
+        console.info("세션 확인 오류가 발생했지만 무시했습니다.");
       }
     };
 
     checkSession();
+
+    return () => {
+      controller.abort();
+    };
   }, [dispatch]);
 
   return null; // 이 컴포넌트는 UI를 렌더링하지 않음
