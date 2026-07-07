@@ -68,7 +68,7 @@ const CATEGORIES = [
 
 export default function FilterSetupPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
       <FilterSetupInner />
     </Suspense>
   );
@@ -321,9 +321,6 @@ function FilterSetupInner() {
         }
       };
       
-      // 디버깅: 요청 데이터 로그
-      console.log("📤 [필터 설정] 저장 요청:", JSON.stringify(requestBody, null, 2));
-      
       const response = await fetch(apiUrl("api/filter/preferences"), {
         method: "POST",
         headers: {
@@ -336,21 +333,15 @@ function FilterSetupInner() {
       if (!response.ok) {
         // 에러 응답 처리
         let errorMessage = "설정 저장에 실패했습니다.";
-        let errorDetails = null;
         try {
           const errorData = await response.json();
-          console.error("❌ [필터 설정] 에러 응답:", errorData);
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
             errorMessage = errorData.error;
           }
-          errorDetails = errorData;
         } catch (e) {
           // JSON 파싱 실패 시 기본 메시지 사용
-          console.error("❌ [필터 설정] 에러 응답 파싱 실패:", e);
-          const errorText = await response.text();
-          console.error("❌ [필터 설정] 에러 응답 텍스트:", errorText);
           if (response.status === 401) {
             errorMessage = "로그인이 필요합니다. 다시 로그인해주세요.";
           } else if (response.status === 400) {
@@ -362,9 +353,8 @@ function FilterSetupInner() {
         throw new Error(errorMessage);
       }
       
-      const responseData = await response.json();
-      console.log("설정 저장 성공:", responseData);
-      
+      await response.json();
+
       // 성공 시 대시보드로 이동
       router.push(`/dashboard?youtube=connected`);
     } catch (error) {
@@ -381,7 +371,7 @@ function FilterSetupInner() {
       {/* 진행 표시기 */}
       <div className="flex items-center justify-center gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
             1
           </div>
           <span className="text-sm font-bold text-black">카테고리 선택</span>
@@ -430,14 +420,14 @@ function FilterSetupInner() {
               key={category.id}
               className={`cursor-pointer transition-all relative active:scale-[0.98] ${
                 isSelected
-                  ? "border-2 border-blue-600 bg-blue-50 shadow-md"
+                  ? "border-2 border-primary bg-primary/5 shadow-md"
                   : "border border-gray-200 hover:border-gray-300 hover:shadow-md hover:-translate-y-1"
               }`}
               onClick={() => handleCategoryToggle(category.id)}
             >
               {/* 선택 시 우측 상단 체크 배지 */}
               {isSelected && (
-                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -469,9 +459,9 @@ function FilterSetupInner() {
       {/* 선택된 카테고리 개수 표시 */}
       {selectedCategories.length > 0 && (
         <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+          <CheckCircle2 className="w-4 h-4 text-primary" />
           <span>
-            <span className="font-semibold text-blue-600">{selectedCategories.length}개</span>의 카테고리가 선택되었습니다
+            <span className="font-semibold text-primary">{selectedCategories.length}개</span>의 카테고리가 선택되었습니다
           </span>
         </div>
       )}
@@ -490,8 +480,8 @@ function FilterSetupInner() {
           size="lg"
           className={`h-14 px-8 rounded-lg text-base font-semibold transition-all ${
             isStep1NextEnabled
-              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-              : "bg-blue-100 text-blue-400 cursor-not-allowed"
+              ? "bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg"
+              : "bg-primary/10 text-primary/40 cursor-not-allowed"
           }`}
           disabled={!isStep1NextEnabled}
           onClick={handleStep1Next}
@@ -509,14 +499,14 @@ function FilterSetupInner() {
         {/* 진행 표시기 */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               1
             </div>
             <span className="text-sm font-medium text-gray-600">카테고리 선택</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               2
             </div>
             <span className="text-sm font-bold text-black">필터링 설명</span>
@@ -574,7 +564,7 @@ function FilterSetupInner() {
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder="예시: 저를 비난하는 건 괜찮지만, 가족을 욕하는 댓글은 무조건 막아주세요. 욕설, 비판"
                     
-                className="w-full min-h-[200px] px-4 py-3 text-base rounded-lg border border-gray-300 bg-white resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                className="w-full min-h-[200px] px-4 py-3 text-base rounded-lg border border-gray-300 bg-white resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all placeholder:text-gray-400"
                 rows={8}
               />
               <p className="text-xs text-gray-500">
@@ -596,7 +586,7 @@ function FilterSetupInner() {
           </Button>
           <Button
             size="lg"
-            className="h-14 px-8 rounded-lg text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+            className="h-14 px-8 rounded-lg text-base font-semibold bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all"
             onClick={handleStep2Next}
           >
             다음
@@ -631,21 +621,21 @@ function FilterSetupInner() {
         {/* 진행 표시기 */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               1
             </div>
             <span className="text-sm font-medium text-gray-600">카테고리 선택</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               2
             </div>
             <span className="text-sm font-medium text-gray-600">필터링 설명</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               3
             </div>
             <span className="text-sm font-bold text-black">예시 댓글 확인</span>
@@ -678,7 +668,7 @@ function FilterSetupInner() {
                   진행 상황
                 </span>
                 <span className={`text-sm font-bold ${
-                  totalSelected >= 3 ? "text-blue-600" : "text-blue-500"
+                  totalSelected >= 3 ? "text-primary" : "text-primary/80"
                 }`}>
                   {totalSelected}/{examples.length || 0} 완료
                   {totalSelected >= 3 && (
@@ -692,7 +682,7 @@ function FilterSetupInner() {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-300 bg-blue-600"
+                className="h-full rounded-full transition-all duration-300 bg-primary"
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               />
             </div>
@@ -703,7 +693,7 @@ function FilterSetupInner() {
         {isLoadingExamples ? (
           <Card className="border border-gray-200">
             <CardContent className="p-12 flex flex-col items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
               <p className="text-gray-600">예시 댓글을 불러오는 중...</p>
             </CardContent>
           </Card>
@@ -732,7 +722,7 @@ function FilterSetupInner() {
                     isDislike
                       ? "border-red-300 bg-red-50"
                       : isAllow
-                      ? "border-blue-300 bg-blue-50"
+                      ? "border-primary/40 bg-primary/5"
                       : isSkipped
                       ? "border-gray-300 bg-gray-100"
                       : "border-gray-200 hover:border-gray-300 bg-white"
@@ -808,8 +798,8 @@ function FilterSetupInner() {
                           size="sm"
                           className={`px-4 py-2 text-sm font-medium transition-all ${
                             isAllow
-                              ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-sm"
-                              : "bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200"
+                              ? "bg-primary hover:bg-primary/90 text-white border-primary shadow-sm"
+                              : "bg-primary/5 hover:bg-primary/10 text-primary border border-primary/30"
                           }`}
                           onClick={() => handleAllow(example.commentText)}
                         >
@@ -839,8 +829,8 @@ function FilterSetupInner() {
             size="lg"
             className={`h-14 px-8 rounded-lg text-base font-semibold transition-all ${
               isNextEnabled
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-                : "bg-blue-100 text-blue-400 cursor-not-allowed"
+                ? "bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg"
+                : "bg-primary/10 text-primary/40 cursor-not-allowed"
             }`}
             disabled={!isNextEnabled}
             onClick={handleStep3Next}
@@ -865,28 +855,28 @@ function FilterSetupInner() {
         {/* 진행 표시기 */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               1
             </div>
             <span className="text-sm font-medium text-gray-600">카테고리 선택</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               2
             </div>
             <span className="text-sm font-medium text-gray-600">필터링 설명</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               3
             </div>
             <span className="text-sm font-medium text-gray-600">예시 댓글 확인</span>
           </div>
-          <div className="w-12 h-0.5 bg-blue-600"></div>
+          <div className="w-12 h-0.5 bg-primary"></div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
               4
             </div>
             <span className="text-sm font-bold text-black">최종 확인</span>
@@ -908,7 +898,7 @@ function FilterSetupInner() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-blue-600" />
+                <Bell className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-gray-900">
                   이메일 알림 받기
                 </h2>
@@ -917,7 +907,7 @@ function FilterSetupInner() {
                 type="button"
                 onClick={() => setEmailNotificationEnabled(!emailNotificationEnabled)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  emailNotificationEnabled ? "bg-blue-600" : "bg-gray-300"
+                  emailNotificationEnabled ? "bg-primary" : "bg-gray-300"
                 }`}
               >
                 <span
@@ -1077,7 +1067,7 @@ function FilterSetupInner() {
           </Button>
           <Button
             size="lg"
-            className="h-14 px-8 rounded-lg text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+            className="h-14 px-8 rounded-lg text-base font-semibold bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all"
             onClick={handleStep4Submit}
             disabled={isSubmitting}
           >

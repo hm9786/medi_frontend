@@ -281,6 +281,7 @@ export default function SignupStep2Page() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
+          phone: formData.phone,
           isTermsAgreed: true, // Step1에서 이미 동의했으므로 true
         }),
       });
@@ -328,13 +329,13 @@ export default function SignupStep2Page() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation variant="landing" />
+      <Navigation />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-center items-center pt-20">
         <div className="flex flex-col items-center gap-8 w-full max-w-md px-4 py-8">
-          {/* 제목 (Roboto 폰트 적용) */}
-          <h1 className="text-6xl font-medium font-['Roboto'] text-black text-center">
+          {/* 제목 */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-foreground text-center">
             회원가입
           </h1>
 
@@ -345,7 +346,7 @@ export default function SignupStep2Page() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="email"
-                className="text-base font-bold font-['Comic_Neue']"
+                className="text-base font-bold"
               >
                 아이디(이메일)
               </Label>
@@ -380,7 +381,7 @@ export default function SignupStep2Page() {
               <div className="w-full grid gap-1.5 animate-in fade-in-50 slide-in-from-top-2 duration-300">
                 <Label
                   htmlFor="authCode"
-                  className="text-base font-bold font-['Comic_Neue']"
+                  className="text-base font-bold"
                 >
                   인증번호 확인
                 </Label>
@@ -411,7 +412,7 @@ export default function SignupStep2Page() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="password"
-                className="text-base font-bold font-['Comic_Neue']"
+                className="text-base font-bold"
               >
                 비밀번호
               </Label>
@@ -431,7 +432,7 @@ export default function SignupStep2Page() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="confirmPassword"
-                className="text-base font-bold font-['Comic_Neue']"
+                className="text-base font-bold"
               >
                 비밀번호 확인
               </Label>
@@ -455,7 +456,7 @@ export default function SignupStep2Page() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="name"
-                className="text-base font-bold font-['Comic_Neue']"
+                className="text-base font-bold"
               >
                 이름
               </Label>
@@ -474,7 +475,7 @@ export default function SignupStep2Page() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="phone"
-                className="text-base font-bold font-['Comic_Neue']"
+                className="text-base font-bold"
               >
                 전화번호
               </Label>

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { restoreSession } from "@/lib/slices/authSlice";
+import { restoreSession, sessionCheckComplete } from "@/lib/slices/authSlice";
 import { apiUrl } from "@/lib/config";
 
 export default function AuthInitializer() {
@@ -23,6 +23,7 @@ export default function AuthInitializer() {
         // HTTP 상태 코드 확인
         if (!response.ok) {
           // 401 Unauthorized 등은 정상적인 경우 (로그인 안 됨)
+          dispatch(sessionCheckComplete());
           return;
         }
 
@@ -32,12 +33,15 @@ export default function AuthInitializer() {
           // 세션이 유효하면 Redux에 사용자 정보 저장
           dispatch(restoreSession(data.user));
         }
+        dispatch(sessionCheckComplete());
       } catch (error) {
         if (error.name === "AbortError") {
-          return; // 컴포넌트 언마운트로 인한 fetch 중단은 무시
+          // 컴포넌트 언마운트로 인한 fetch 중단은 무시 (초기화 완료 처리하지 않음)
+          return;
         }
         // 네트워크 오류 등은 조용히 처리 (로그인 안 된 것으로 간주)
         console.info("세션 확인 오류가 발생했지만 무시했습니다.");
+        dispatch(sessionCheckComplete());
       }
     };
 

@@ -376,13 +376,13 @@ export default function FindPasswordPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation variant="landing" />
+      <Navigation />
 
       {/* 메인 콘텐츠 */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-16">
         <div className="flex flex-col items-center gap-8 w-full max-w-md px-4 py-8">
           {/* 제목 */}
-          <h1 className="text-6xl font-medium font-['Roboto'] text-black mb-12">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-foreground mb-12">
             비밀번호 찾기
           </h1>
 
@@ -392,7 +392,7 @@ export default function FindPasswordPage() {
             <div className="w-full grid gap-1.5">
               <Label
                 htmlFor="email"
-                className="text-xl font-bold font-['Comic_Neue'] text-black"
+                className="text-xl font-bold text-black"
               >
                 아이디(이메일)
               </Label>
@@ -435,7 +435,7 @@ export default function FindPasswordPage() {
               <div className="w-full grid gap-1.5 animate-in fade-in-50 slide-in-from-top-2 duration-300">
                 <Label
                   htmlFor="authCode"
-                  className="text-xl font-bold font-['Comic_Neue'] text-black"
+                  className="text-xl font-bold text-black"
                 >
                   인증번호 확인
                 </Label>
@@ -469,7 +469,7 @@ export default function FindPasswordPage() {
                 <div className="w-full grid gap-1.5 animate-in fade-in-50 slide-in-from-top-2 duration-300">
                   <Label
                     htmlFor="newPassword"
-                    className="text-xl font-bold font-['Comic_Neue'] text-black"
+                    className="text-xl font-bold text-black"
                   >
                     새 비밀번호
                   </Label>
@@ -489,7 +489,7 @@ export default function FindPasswordPage() {
                 <div className="w-full grid gap-1.5">
                   <Label
                     htmlFor="confirmPassword"
-                    className="text-xl font-bold font-['Comic_Neue'] text-black"
+                    className="text-xl font-bold text-black"
                   >
                     비밀번호 확인
                   </Label>
@@ -530,7 +530,7 @@ export default function FindPasswordPage() {
           </form>
 
           {/* 로그인 링크 */}
-          <div className="text-sm text-black-600">
+          <div className="text-sm text-slate-900">
             <Link href="/login" className="font-bold text-gray-500 hover:underline">
               로그인으로 돌아가기
             </Link>

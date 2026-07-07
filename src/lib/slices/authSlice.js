@@ -5,6 +5,9 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  // 앱 최초 로드 시 /api/auth/me 세션 확인이 끝났는지 여부
+  // (성공/실패와 무관하게 확인이 완료되면 true)
+  initialized: false,
   error: null,
 };
 
@@ -48,6 +51,10 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
       }
     },
+    // 세션 확인 완료 (성공/실패 모두 호출됨)
+    sessionCheckComplete: (state) => {
+      state.initialized = true;
+    },
   },
 });
 
@@ -58,6 +65,7 @@ export const {
   logout,
   updateUser,
   restoreSession,
+  sessionCheckComplete,
 } = authSlice.actions;
 
 export default authSlice.reducer;

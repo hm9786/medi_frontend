@@ -1,5 +1,9 @@
 const defaultTheme = require("tailwindcss/defaultTheme")
 
+// CSS 변수(oklch) 색상에 투명도 유틸리티(bg-primary/90 등)를 적용할 수 있도록
+// CSS 상대 색상 문법(relative color syntax)을 사용합니다.
+const withAlpha = (variable) => `oklch(from var(${variable}) l c h / <alpha-value>)`
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   // 1. content 경로를 JavaScript 프로젝트에 맞게 수정
@@ -19,25 +23,21 @@ module.exports = {
       },
     },
     extend: {
-      fontFamily: {
-        sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans], // Inter
-        comic: ["var(--font-comic-neue)"], // Comic Neue
-        roboto: ["var(--font-roboto)"], // Roboto
-      },
       colors: {
+        // border/input은 다크 모드에서 자체 알파값을 가지므로 그대로 사용
         border: "var(--border)",
         input: "var(--input)",
-        ring: "var(--ring)",
+        ring: withAlpha("--ring"),
         background: "var(--background)",
         foreground: "var(--foreground)",
-        primary: "var(--primary)",
-        "primary-foreground": "var(--primary-foreground)",
-        secondary: "var(--secondary)",
+        primary: withAlpha("--primary"),
+        "primary-foreground": withAlpha("--primary-foreground"),
+        secondary: withAlpha("--secondary"),
         "secondary-foreground": "var(--secondary-foreground)",
-        destructive: "var(--destructive)",
-        accent: "var(--accent)",
+        destructive: withAlpha("--destructive"),
+        accent: withAlpha("--accent"),
         "accent-foreground": "var(--accent-foreground)",
-        muted: "var(--muted)",
+        muted: withAlpha("--muted"),
         "muted-foreground": "var(--muted-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",
@@ -51,14 +51,6 @@ module.exports = {
         "sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
         "sidebar-border": "var(--sidebar-border)",
         "sidebar-ring": "var(--sidebar-ring)",
-
-        // ⬇️ [추가됨] Medi 커스텀 색상
-        "medi-primary": {
-          light: "hsl(var(--medi-primary-light))",
-          lighter: "hsl(var(--medi-primary-lighter))",
-          DEFAULT: "hsl(var(--primary))",
-          dark: "hsl(var(--medi-primary-dark))",
-        }
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -72,10 +64,6 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
         mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],
-        
-        // ⬇️ [추가됨] 커스텀 폰트 (globals.css에 @import 필요)
-        comic: ["var(--font-comic-neue)"],
-        roboto: ["var(--font-roboto)"],
       },
       // ⬇️ [추가됨] shadcn/ui 애니메이션
       keyframes: {
