@@ -57,14 +57,14 @@ export default function LoginPage() {
   const router = useRouter();
   
   // Redux에서 로딩 상태와 에러 가져오기
-  const { isLoading, error, isAuthenticated } = useSelector((state) => state.auth);
+  const { isLoading, error, isAuthenticated, initialized } = useSelector((state) => state.auth);
 
-  // 이미 로그인되어 있으면 대시보드로 리다이렉트
+  // 이미 로그인되어 있으면 대시보드로 리다이렉트 (세션 확인 완료 후에만 판단)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (initialized && isAuthenticated) {
       router.push("/dashboard");
     }
-  }, [isAuthenticated, router]);
+  }, [initialized, isAuthenticated, router]);
 
   // 로그인 상태면 아무것도 렌더링하지 않음 (리다이렉트 중)
   if (isAuthenticated) {
@@ -128,14 +128,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation variant="landing" hideButtons={true} />
+      <Navigation hideButtons={true} />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-16">
         <div className="flex flex-col items-center gap-8 w-full max-w-md px-4 py-8">
-          
-          {/* 3-1. 제목 (Roboto 폰트 적용) */}
-          <h1 className="text-6xl font-medium font-['Roboto'] text-black mb-12">
+
+          {/* 3-1. 제목 */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-foreground mb-12">
             로그인
           </h1>
 
@@ -144,9 +144,9 @@ export default function LoginPage() {
             
             {/* 아이디(이메일) 입력란 */}
             <div className="w-full grid gap-1.5">
-              <Label 
-                htmlFor="email" 
-                className="text-xl font-bold font-['Comic_Neue'] text-black"
+              <Label
+                htmlFor="email"
+                className="text-xl font-bold text-foreground"
               >
                 아이디(이메일)
               </Label>
@@ -162,9 +162,9 @@ export default function LoginPage() {
 
             {/* 비밀번호 입력란 */}
             <div className="w-full grid gap-1.5">
-              <Label 
-                htmlFor="password" 
-                className="text-xl font-bold font-['Comic_Neue'] text-black"
+              <Label
+                htmlFor="password"
+                className="text-xl font-bold text-foreground"
               >
                 비밀번호
               </Label>
@@ -202,7 +202,7 @@ export default function LoginPage() {
           </form>
 
           {/* 회원가입 링크 */}
-          <div className="text-sm text-black-600">
+          <div className="text-sm text-slate-900">
             회원이 아니신가요?
             <Link href="/signup/step0" className="font-bold text-gray-500 hover:underline ml-1">
               회원가입

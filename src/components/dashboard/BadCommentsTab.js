@@ -280,7 +280,6 @@ export function BadCommentsTab({ data }) {
 
     try {
       // 1) 리포트 생성 요청 (큐에 작업 추가)
-      console.log("📤 보고서 생성 요청 전송 중...");
       await fetch(apiUrl("/api/reports"), {
         method: "POST",
         credentials: "include",
@@ -290,7 +289,6 @@ export function BadCommentsTab({ data }) {
           data: {},
         }),
       });
-      console.log("✅ 보고서 생성 요청 완료 (에이전트 처리 대기 중)");
 
       // 2) 폴링: 5초마다 메타데이터 조회 시도 (최대 10분 = 120회)
       let pollCount = 0;
@@ -301,7 +299,6 @@ export function BadCommentsTab({ data }) {
         return new Promise((resolve, reject) => {
           const interval = setInterval(async () => {
             pollCount++;
-            console.log(`🔄 보고서 조회 시도 (${pollCount}/${maxPolls})...`);
 
             // 사용자가 로딩 모달을 닫아 생성 플로우를 취소한 경우
             if (isReportCancelledRef.current) {
@@ -325,7 +322,6 @@ export function BadCommentsTab({ data }) {
                 // 성공! 폴링 중단
                 clearInterval(interval);
                 pollIntervalRef.current = null;
-                console.log("✅ 보고서 데이터 발견! 전체 데이터 조회 시작...");
 
                 // 위협 인텔리전스 상태를 "완료"로 변경
                 setThreatStatus("done");
@@ -407,7 +403,6 @@ export function BadCommentsTab({ data }) {
                 reject(error);
               }
               // 에러 발생해도 계속 재시도
-              console.log(`⚠️ 조회 실패, 재시도 중... (${pollCount}/${maxPolls})`);
             }
           }, pollInterval);
 
@@ -425,8 +420,6 @@ export function BadCommentsTab({ data }) {
       // 모든 데이터 수신 완료 → 콘텐츠 방어 전략 보고서 "생성 완료"
       setDefenseStatus("done");
 
-      console.log("🎉 보고서 생성 완료!");
-
       // "생성 완료" 메시지를 사용자가 볼 수 있도록 약간의 딜레이 후 모달 닫기
       setTimeout(() => {
         setOpenReportLoading(false);
@@ -436,9 +429,9 @@ export function BadCommentsTab({ data }) {
     } catch (error) {
       // 사용자가 로딩 모달을 닫아서 취소한 경우에는 에러 알림을 띄우지 않음
       if (error?.message === "REPORT_GENERATION_CANCELLED") {
-        console.log("⏹ 보고서 생성 플로우가 사용자에 의해 취소되었습니다.");
+        // 사용자가 직접 취소한 경우이므로 별도 처리 없음
       } else {
-        console.error("❌ 보고서 생성/조회 실패:", error);
+        console.error("보고서 생성/조회 실패:", error);
         alert("보고서 생성에 실패했습니다. 다시 시도해주세요.");
       }
       setThreatStatus("idle");

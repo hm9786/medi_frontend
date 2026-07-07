@@ -197,7 +197,10 @@ export function OverviewTab({ data, channel }) {
             }
           });
         } else {
-          console.error("시간대 별 악플 통계 조회 실패:", response.status);
+          // 404 = 아직 분석 결과가 없는 정상 케이스이므로 조용히 빈 상태로 처리
+          if (response.status !== 404) {
+            console.error("시간대 별 악플 통계 조회 실패:", response.status);
+          }
           setTimePatternData(null);
         }
       } catch (error) {
@@ -333,23 +336,11 @@ export function OverviewTab({ data, channel }) {
   if (!data) {
     return <div className="p-8 text-center text-gray-500">데이터를 불러오는 중입니다...</div>;
   }
-  // 시연용: DB에 저장된 값만 사용 (무조건 DB 값 사용)
-  const totalViews = channel?.totalViewCount ?? channel?.total_view_count ?? 0;
-  const totalComments = channel?.totalCommentCount ?? channel?.total_comment_count ?? 0;
-  const totalVideos = channel?.totalVideoCount ?? channel?.total_video_count ?? 0;
-  
-  // 채널 생성일 포맷팅 (YYYY.MM.DD 형식)
-  const formatChannelCreatedDate = (date) => {
-    if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) return '-';
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    return `${year}.${month}.${day}`;
-  };
-  const channelCreatedDate = channel?.channelCreatedAt ?? channel?.channel_created_at;
-  
+  // 백엔드 응답의 camelCase 필드명 그대로 사용 (null일 수 있음)
+  const totalViews = channel?.totalViewCount ?? 0;
+  const totalComments = channel?.totalCommentCount ?? 0;
+  const totalVideos = channel?.totalVideoCount ?? 0;
+
   // 재연동 필요 여부 확인
   const getChannelStatus = (lastSyncedAt) => {
     if (!lastSyncedAt) return { status: 'warning', authExpiry: 'D-?' };
@@ -404,17 +395,13 @@ export function OverviewTab({ data, channel }) {
             </CardContent>
           </Card>
 
-          {/* 중간 카드: 채널 생성일, 구독자수, 총 조회수, 총 동영상 수 */}
+          {/* 중간 카드: 구독자수, 총 조회수, 총 동영상 수 */}
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 h-full lg:justify-center">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
-                  <span className="text-gray-600 text-sm lg:text-base">채널 생성일</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{formatChannelCreatedDate(channelCreatedDate)}</span>
-                </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">구독자 수</span>
-                  <span className="text-gray-900 font-semibold lg:font-normal">{(channel.subscriberCount || channel.subscriber_count || 0).toLocaleString()}명</span>
+                  <span className="text-gray-900 font-semibold lg:font-normal">{(channel.subscriberCount ?? 0).toLocaleString()}명</span>
                 </div>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-3 lg:border-b border-gray-100">
                   <span className="text-gray-600 text-sm lg:text-base">총 조회수</span>
@@ -708,7 +695,7 @@ export function OverviewTab({ data, channel }) {
               return (
                 <div
                   key={video.id}
-                  className="group flex flex-col rounded-3xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all cursor-pointer"
+                  className="group flex flex-col rounded-3xl border border-gray-100 bg-white hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer"
                   onClick={() => {
                     // 클릭 시 즉시 스크롤 처리
                     window.scrollTo(0, 0);

@@ -49,7 +49,7 @@ export default function Home() {
       <main className="min-h-screen bg-white text-slate-900 transition-colors duration-300 font-sans">
         
         {/* 1. 네비게이션 헤더 */}
-        <Navigation variant="landing" />
+        <Navigation />
 
         {/* 2. 히어로 섹션 */}
         <section className="flex flex-col items-center text-center min-h-screen pt-8 sm:pt-16 md:pt-20 pb-16 sm:pb-32 md:pb-40 transition-colors duration-300 overflow-hidden">
@@ -61,7 +61,7 @@ export default function Home() {
                 <span className="block text-slate-900 transition-colors text-[1.4rem] sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-snug whitespace-nowrap mb-2 sm:mb-4 md:mb-6 lg:mb-8">
                   유튜브 크리에이터를 위한
                 </span>
-                <span className="block text-blue-600 transition-colors text-[1.5rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-snug whitespace-nowrap font-black">
+                <span className="block text-primary transition-colors text-[1.5rem] sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-snug whitespace-nowrap font-black">
                   댓글 관리 AI Agent
                 </span>
               </h1>
@@ -74,12 +74,19 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start px-2 mt-6 sm:mt-8">
                 <Link href="/signup/step0" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto gap-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors text-sm sm:text-base">
+                  <Button size="lg" className="w-full sm:w-auto gap-2 transition-colors text-sm sm:text-base">
                     지금 시작하기 <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-slate-200 transition-colors text-sm sm:text-base">
-                  데모 영상 보기
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto border-slate-200 transition-colors text-sm sm:text-base"
+                  onClick={() => {
+                    document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  주요 기능 보기
                 </Button>
               </div>
             </div>
@@ -118,7 +125,7 @@ export default function Home() {
         </section>
 
         {/* 3. 기능 소개 섹션 */}
-        <section className="py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <section id="features" className="py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto scroll-mt-20">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-6 sm:mb-10 md:mb-12 text-slate-900 transition-colors">주요 기능</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             
@@ -129,7 +136,7 @@ export default function Home() {
             ].map((item, index) => (
               <Card key={index} className="bg-white border-slate-200 transition-colors duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <CheckCircle2 className="w-10 h-10 text-blue-500 mb-2" />
+                  <CheckCircle2 className="w-10 h-10 text-primary mb-2" />
                   <CardTitle className="text-slate-900 transition-colors">{item.title}</CardTitle>
                   <CardDescription className="text-slate-500 transition-colors">{item.desc}</CardDescription>
                 </CardHeader>

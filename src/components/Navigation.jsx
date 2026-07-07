@@ -20,7 +20,7 @@ export default function Navigation({ hideButtons = false }) {
                 </Button>
               </Link>
               <Link href="/signup/step0">
-                <Button size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors font-bold">
+                <Button size="default" className="text-sm sm:text-base px-4 sm:px-6 py-2 transition-colors font-bold">
                   회원가입
                 </Button>
               </Link>

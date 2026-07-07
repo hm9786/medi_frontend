@@ -18,9 +18,9 @@
     CreditCard,
     UserCircle2,
     MessageSquare,
-    Moon,
     ChevronRight,
     AlertCircle,
+    Loader2,
     BarChart3, //  탭 아이콘
     Lightbulb, //  탭 아이콘
     Shield,    //  탭 아이콘
@@ -296,13 +296,14 @@
   // 3. 대시보드 전체 레이아웃
   export default function DashboardLayout({ children }) {
     const router = useRouter();
-    const { isAuthenticated, user } = useSelector((state) => state.auth);
+    const { isAuthenticated, initialized, user } = useSelector((state) => state.auth);
 
     useEffect(() => {
-      if (!isAuthenticated) {
+      // 세션 확인(/api/auth/me)이 끝난 뒤에만 리다이렉트 판단
+      if (initialized && !isAuthenticated) {
         router.push("/");
       }
-    }, [isAuthenticated, router]);
+    }, [initialized, isAuthenticated, router]);
 
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [currentView, setCurrentView] = useState('channels');
@@ -378,6 +379,15 @@
     setActiveTab, 
     handleBackToChannels //  handleBackToChannels도 Context에 포함
   };
+
+  // 세션 확인이 끝날 때까지 로딩 스피너 표시 (새로고침 시 로그인 상태가 튕기는 것 방지)
+  if (!initialized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return null;

@@ -123,7 +123,7 @@ export function LegalConsultingTab({ data, channelId }) {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -135,7 +135,7 @@ export function LegalConsultingTab({ data, channelId }) {
       <Card className="h-full flex flex-col border-gray-200 shadow-sm">
         <CardHeader className="border-b pb-4 bg-white rounded-t-xl flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Scale className="size-6 text-blue-600" />
+            <Scale className="size-6 text-primary" />
             <div>
               <CardTitle className="text-lg">법률 AI 상담소</CardTitle>
               <CardDescription className="text-xs mt-1 flex items-center gap-1">
@@ -159,7 +159,7 @@ export function LegalConsultingTab({ data, channelId }) {
                 >
                   {message.type === 'bot' && (
                     <Avatar className="w-8 h-8 border bg-white shadow-sm flex-shrink-0">
-                      <AvatarFallback className="bg-blue-50 text-blue-600">
+                      <AvatarFallback className="bg-primary/10 text-primary">
                         <Bot size={16} />
                       </AvatarFallback>
                     </Avatar>
@@ -168,13 +168,13 @@ export function LegalConsultingTab({ data, channelId }) {
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
                       message.type === 'user'
-                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        ? 'bg-primary text-primary-foreground rounded-tr-none'
                         : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none'
                     }`}
                   >
                     {message.content}
                     <p className={`text-[10px] mt-1 text-right ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-400'
+                      message.type === 'user' ? 'text-primary-foreground/70' : 'text-gray-400'
                     }`}>
                       {message.timestamp.toLocaleTimeString('ko-KR', {
                         hour: '2-digit',
@@ -196,12 +196,12 @@ export function LegalConsultingTab({ data, channelId }) {
               {isLoading && (
                 <div className="flex gap-3 justify-start">
                   <Avatar className="w-8 h-8 border bg-white shadow-sm flex-shrink-0">
-                    <AvatarFallback className="bg-blue-50 text-blue-600">
+                    <AvatarFallback className="bg-primary/10 text-primary">
                       <Bot size={16} />
                     </AvatarFallback>
                   </Avatar>
                   <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     <span className="text-xs text-gray-500">법률 데이터를 분석 중입니다...</span>
                   </div>
                 </div>
@@ -215,15 +215,15 @@ export function LegalConsultingTab({ data, channelId }) {
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="궁금한 내용을 입력하세요..."
-                className="flex-1 focus-visible:ring-blue-600"
+                className="flex-1"
                 disabled={isLoading}
               />
               <Button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isLoading}
-                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white w-12"
+                className="shrink-0 w-12"
               >
                 {isLoading ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
               </Button>

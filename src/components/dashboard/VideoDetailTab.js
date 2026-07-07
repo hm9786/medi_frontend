@@ -368,7 +368,7 @@ export function VideoDetailTab({ video, onBack }) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[600px]">
-        <Loader2 className="size-8 animate-spin text-blue-600" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -380,13 +380,10 @@ export function VideoDetailTab({ video, onBack }) {
   const filteringRate = totalComments > 0 
     ? ((filteredComments / totalComments) * 100).toFixed(1) 
     : '0.0';
-  const todayFilteredCount = stats?.todayFilteredCount ?? stats?.todayFiltered ?? 0;
-  const recentWeekFilteredCount = stats?.recent7DaysFilteredCount ?? stats?.weekFilteredCount ?? 0;
-  const legalFlaggedCount =
-    stats?.legalFlaggedCount ??
-    stats?.legalReviewRecommendationCount ??
-    stats?.legalConsultingRecommendedCount ??
-    0;
+  // 백엔드 DTO 필드명 그대로 사용
+  const todayFilteredCount = stats?.todayFilteredCount ?? 0;
+  const recentWeekFilteredCount = stats?.recent7DaysFilteredCount ?? 0;
+  const legalFlaggedCount = stats?.legalConsultingRecommendedCount ?? 0;
   const dailyAverageFiltered = recentWeekFilteredCount
     ? Math.max(1, Math.round(recentWeekFilteredCount / 7))
     : Math.max(0, Math.round(filteredComments / Math.max(chartData.length || 1, 7)));
@@ -739,7 +736,7 @@ export function VideoDetailTab({ video, onBack }) {
                               className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium ${
                                 isVisible
                                   ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                               }`}
                             >
                               <Eye className="w-4 h-4" />

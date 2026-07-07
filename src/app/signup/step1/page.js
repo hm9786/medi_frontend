@@ -79,14 +79,14 @@ export default function SignupStep0Page() {
   return (
     <div className="min-h-screen bg-white">
       {/* 네비게이션 */}
-      <Navigation variant="landing" hideButtons={true} />
+      <Navigation hideButtons={true} />
 
       {/* 메인 콘텐츠 (flex를 사용해 화면 중앙에 배치) */}
       <main className="min-h-screen flex flex-col justify-start items-center pt-32">
         <div className="flex flex-col items-center gap-10 w-full max-w-md px-4">
           
-          {/* 3-1. 메디 시작하기 (Roboto 폰트 적용) */}
-          <h1 className="text-6xl font-medium font-['Roboto'] leading-[100px] text-black">
+          {/* 3-1. 메디 시작하기 */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-foreground">
             메디 시작하기
           </h1>
 
