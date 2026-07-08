@@ -15,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Search, TrendingUp, Shield, Clock, Brain, Sun, Cloud, CloudRain, Zap, ArrowUpRight, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { VideoDetailTab } from './VideoDetailTab';
@@ -87,6 +89,8 @@ export function OverviewTab({ data, channel }) {
   // 📌 삭제 확인 다이얼로그 State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false); // 삭제 중 상태
+  const [deleteAction, setDeleteAction] = useState('reject'); // 'reject'(삭제) | 'hold'(검토 보류)
+  const [banAuthor, setBanAuthor] = useState(false); // 작성자 향후 댓글 자동 차단
   
   // 📌 영상별 필터링 통계 State
   const [videoStats, setVideoStats] = useState({}); // { videoId: { totalFilteredCount, totalCommentCount, filteringRatio } }
@@ -770,28 +774,104 @@ export function OverviewTab({ data, channel }) {
         </CardContent>
       </Card>
 
-      {/* 필터링 된 댓글 삭제 확인 다이얼로그 */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* 필터링 된 댓글 일괄 처리 다이얼로그 */}
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          setShowDeleteDialog(open);
+          if (open) {
+            // 다이얼로그를 열 때마다 기본 옵션으로 초기화
+            setDeleteAction('reject');
+            setBanAuthor(false);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>필터링 된 댓글을 삭제하시겠습니까?</AlertDialogTitle>
-            <div className="text-sm text-muted-foreground space-y-3 pt-2">
-              <div>
-                이 채널에서 필터링 된 총{' '}
-                <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 YouTube에서 영구적으로 삭제됩니다
-              </div>
-              <div className="font-semibold text-gray-900">
-                삭제된 댓글은 복원할 수 없습니다
-              </div>
-              <div className="text-sm text-gray-600">
-                댓글을 검토하거나 개별로 삭제하고 싶다면, 영상 대시보드에서 해당 댓글을 확인하실 수 있습니다
-              </div>
+            <AlertDialogTitle>필터링 된 댓글을 어떻게 처리할까요?</AlertDialogTitle>
+            <div className="text-sm text-muted-foreground pt-2">
+              이 채널에서 필터링 된 총{' '}
+              <span className="font-bold text-red-600">{totalFiltered.toLocaleString()}건</span>의 댓글이 선택한 방식으로 처리됩니다
             </div>
           </AlertDialogHeader>
+
+          {/* 처리 방식 선택 (라디오) */}
+          <div className="space-y-2" role="radiogroup" aria-label="처리 방식">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={deleteAction === 'reject'}
+              onClick={() => setDeleteAction('reject')}
+              className={`w-full flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                deleteAction === 'reject'
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <span
+                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                  deleteAction === 'reject' ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                {deleteAction === 'reject' && <span className="size-2 rounded-full bg-red-500" />}
+              </span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-gray-900">삭제 (유튜브에서 거부 처리)</span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  댓글이 유튜브에서 거부 처리되어 더 이상 노출되지 않습니다. 삭제된 댓글은 복원할 수 없습니다
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={deleteAction === 'hold'}
+              onClick={() => setDeleteAction('hold')}
+              className={`w-full flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                deleteAction === 'hold'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <span
+                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                  deleteAction === 'hold' ? 'border-primary' : 'border-gray-300'
+                }`}
+              >
+                {deleteAction === 'hold' && <span className="size-2 rounded-full bg-primary" />}
+              </span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-gray-900">검토 보류로 보내기 (유튜브 스튜디오에서 검토)</span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  댓글을 삭제하지 않고 유튜브 스튜디오의 '검토 대기' 목록으로 보내 직접 확인 후 처리할 수 있습니다
+                </span>
+              </span>
+            </button>
+          </div>
+
+          {/* banAuthor 체크박스 (검토 보류 선택 시 비활성화) */}
+          <div className="flex items-start gap-2 rounded-lg border border-gray-200 p-3">
+            <Checkbox
+              id="channel-ban-author"
+              checked={deleteAction === 'reject' && banAuthor}
+              disabled={deleteAction === 'hold' || isDeleting}
+              onCheckedChange={(checked) => setBanAuthor(checked === true)}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="channel-ban-author"
+              className={`text-sm leading-[1.5] cursor-pointer ${
+                deleteAction === 'hold' ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'
+              }`}
+            >
+              이 작성자들의 향후 댓글도 자동 차단 (banAuthor)
+            </Label>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
+              className={deleteAction === 'hold' ? 'bg-primary hover:bg-primary/90' : 'bg-red-600 hover:bg-red-700'}
               disabled={isDeleting}
               onClick={async () => {
                 if (!channel?.id) {
@@ -801,8 +881,13 @@ export function OverviewTab({ data, channel }) {
 
                 setIsDeleting(true);
                 try {
+                  const params = new URLSearchParams({ action: deleteAction });
+                  if (deleteAction === 'reject' && banAuthor) {
+                    params.set('banAuthor', 'true');
+                  }
+
                   const response = await fetch(
-                    apiUrl(`api/youtube/comments/channel/${channel.id}/filtered`),
+                    apiUrl(`api/youtube/comments/channel/${channel.id}/filtered?${params.toString()}`),
                     {
                       method: 'DELETE',
                       credentials: 'include',
@@ -811,32 +896,53 @@ export function OverviewTab({ data, channel }) {
 
                   if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `댓글 삭제 실패: ${response.status}`);
+                    throw new Error(errorData.message || `댓글 처리 실패: ${response.status}`);
                   }
 
                   const result = await response.json();
-                  const successCount = result.successCount || 0;
-                  const failureCount = result.failureCount || 0;
-                  const totalRequested = result.totalRequested || 0;
 
-                  // 성공 메시지 표시
-                  if (failureCount === 0) {
-                    alert(`성공적으로 ${successCount.toLocaleString()}개의 댓글이 삭제되었습니다.`);
+                  if (deleteAction === 'hold' || result.action === 'hold') {
+                    // 검토 보류 응답 처리
+                    const heldCount = result.heldCount || 0;
+                    const failureCount = result.failureCount || 0;
+
+                    if (failureCount === 0) {
+                      alert(
+                        `${heldCount.toLocaleString()}개의 댓글을 검토 보류로 보냈습니다.\n` +
+                        `유튜브 스튜디오의 '검토 대기' 목록에서 확인하실 수 있습니다.`
+                      );
+                    } else {
+                      alert(
+                        `검토 보류 완료: ${heldCount.toLocaleString()}개 성공, ${failureCount}개 실패\n` +
+                        `실패한 댓글은 잠시 후 다시 시도해주세요.`
+                      );
+                    }
                   } else {
-                    alert(
-                      `삭제 완료: ${successCount.toLocaleString()}개 성공, ${failureCount}개 실패\n` +
-                      `(최대 500개까지만 한 번에 삭제됩니다. 나머지는 개별 삭제하거나 다시 시도해주세요.)`
-                    );
+                    // 삭제(거부) 응답 처리
+                    const successCount = result.successCount || 0;
+                    const failureCount = result.failureCount || 0;
+                    const banNotice = banAuthor
+                      ? '\n해당 작성자들의 향후 댓글은 자동으로 차단됩니다.'
+                      : '';
+
+                    if (failureCount === 0) {
+                      alert(`성공적으로 ${successCount.toLocaleString()}개의 댓글이 삭제되었습니다.${banNotice}`);
+                    } else {
+                      alert(
+                        `삭제 완료: ${successCount.toLocaleString()}개 성공, ${failureCount}개 실패\n` +
+                        `(최대 500개까지만 한 번에 삭제됩니다. 나머지는 개별 삭제하거나 다시 시도해주세요.)${banNotice}`
+                      );
+                    }
                   }
 
                   // 다이얼로그 닫기
                   setShowDeleteDialog(false);
-                  
+
                   // 페이지 새로고침하여 최신 데이터 반영 (선택사항)
                   // window.location.reload();
                 } catch (error) {
-                  console.error('댓글 삭제 실패:', error);
-                  alert(error.message || '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                  console.error('댓글 처리 실패:', error);
+                  alert(error.message || '댓글 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
                 } finally {
                   setIsDeleting(false);
                 }
@@ -845,8 +951,10 @@ export function OverviewTab({ data, channel }) {
               {isDeleting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  삭제 중...
+                  처리 중...
                 </>
+              ) : deleteAction === 'hold' ? (
+                '검토 보류로 보내기'
               ) : (
                 '삭제하기'
               )}

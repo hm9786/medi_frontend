@@ -6,6 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Calendar, TrendingUp, MessageSquare, Shield, AlertTriangle, ShieldAlert, ChevronLeft, ChevronRight, Eye, Scale, ChevronDown, ThumbsUp, Sun, Cloud, CloudRain } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -29,6 +40,8 @@ export function VideoDetailTab({ video, onBack }) {
   const [sortBy, setSortBy] = useState('date');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [deletingCommentIds, setDeletingCommentIds] = useState(() => new Set()); // 삭제 중인 댓글 ID 추적
+  const [deleteTargetId, setDeleteTargetId] = useState(null); // 삭제 확인 다이얼로그 대상 댓글 ID
+  const [banAuthor, setBanAuthor] = useState(false); // 작성자 향후 댓글 자동 차단
   const sortDropdownRef = useRef(null);
   const topRef = useRef(null); // 최상단 요소 참조
 
@@ -291,11 +304,17 @@ export function VideoDetailTab({ video, onBack }) {
     // 페이지 변경 시 현재 페이지의 선택 상태는 유지 (다른 페이지로 이동했다가 돌아올 수 있음)
   };
 
-  const handleDeleteComment = async (commentId) => {
-    // 삭제 확인
-    if (!window.confirm('이 댓글을 삭제하시겠습니까?\n삭제된 댓글은 복원할 수 없습니다.')) {
-      return;
-    }
+  // 삭제 버튼 클릭 시 확인 다이얼로그 열기
+  const handleDeleteComment = (commentId) => {
+    setBanAuthor(false); // 옵션 초기화
+    setDeleteTargetId(commentId);
+  };
+
+  // 다이얼로그에서 확인 시 실제 삭제 수행
+  const confirmDeleteComment = async () => {
+    const commentId = deleteTargetId;
+    if (!commentId) return;
+    setDeleteTargetId(null);
 
     // commentId가 실제 youtubeCommentId인지 확인
     // fetchOriginalComments에서 youtubeCommentId를 id로 매핑했으므로 commentId가 youtubeCommentId
@@ -308,7 +327,7 @@ export function VideoDetailTab({ video, onBack }) {
 
     try {
       const response = await fetch(
-        apiUrl(`api/youtube/comments/${youtubeCommentId}`),
+        apiUrl(`api/youtube/comments/${youtubeCommentId}?banAuthor=${banAuthor}`),
         {
           method: 'DELETE',
           credentials: 'include',
@@ -784,6 +803,51 @@ export function VideoDetailTab({ video, onBack }) {
           )}
         </div>
       )}
+
+      {/* 댓글 삭제 확인 다이얼로그 */}
+      <AlertDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 댓글을 삭제하시겠습니까?</AlertDialogTitle>
+            <div className="text-sm text-muted-foreground pt-2">
+              댓글이 유튜브에서 거부 처리되어 더 이상 노출되지 않습니다.
+              <br />
+              삭제된 댓글은 복원할 수 없습니다.
+            </div>
+          </AlertDialogHeader>
+
+          {/* banAuthor 체크박스 */}
+          <div className="flex items-start gap-2 rounded-lg border border-gray-200 p-3">
+            <Checkbox
+              id="single-ban-author"
+              checked={banAuthor}
+              onCheckedChange={(checked) => setBanAuthor(checked === true)}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="single-ban-author"
+              className="text-sm leading-[1.5] text-gray-700 cursor-pointer"
+            >
+              이 작성자의 향후 댓글도 자동 차단 (banAuthor)
+            </Label>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={confirmDeleteComment}
+            >
+              삭제하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

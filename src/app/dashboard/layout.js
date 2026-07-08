@@ -280,6 +280,14 @@
                     <span className="leading-[1.5]">내 채널</span>
                   </Link>
                 </DropdownMenuItem>
+                {user?.role === "ADMIN" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <Shield className="mr-3 h-4 w-4 text-gray-600" />
+                      <span className="leading-[1.5]">관리자</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-3 h-4 w-4 text-gray-600" />
