@@ -4,13 +4,17 @@ let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:808
 // 클라이언트 환경에서만 실행
 if (typeof window !== 'undefined') {
 
-  // 운영(production) 환경이면 window 기반 URL 사용
-  if (process.env.NODE_ENV === 'production') {
+  // 환경변수가 명시돼 있으면 항상 그 값을 사용 (로컬 Docker: http://localhost:8080)
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  // 값이 없고 운영 환경이면 same-origin(리버스 프록시 배포) 사용
+  else if (process.env.NODE_ENV === 'production') {
     API_BASE_URL = window.location.origin;
   }
-  // 개발 환경이면 환경변수 유지 (backend 주소 유지)
+  // 그 외(개발)는 기본 backend 주소
   else {
-    API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    API_BASE_URL = 'http://localhost:8080';
   }
 }
 
